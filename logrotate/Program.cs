@@ -639,8 +639,8 @@ namespace logrotate
             {
                 string time_str = lrc.DateFormat;
                 time_str = time_str.Replace("%Y", DateTime.Now.Year.ToString());
-                time_str = time_str.Replace("%m", DateTime.Now.Month.ToString());
-                time_str = time_str.Replace("%d", DateTime.Now.Day.ToString());
+                time_str = time_str.Replace("%m", DateTime.Now.Month.ToString("D2"));
+                time_str = time_str.Replace("%d", DateTime.Now.Day.ToString("D2"));
                 time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
                 rotate_name = fi.Name + time_str;
             }
