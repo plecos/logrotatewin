@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
+﻿// ShredFile.cs
+// Created by MUHAMMAD ABUBAKAR
+// Created: 2015-09-19 12:26 PM
+// Modified: 2015-10-02 10:14 AM
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -21,39 +19,46 @@ using System.Security.Cryptography;
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
-namespace logrotate
+#region Imports
+
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+
+#endregion
+
+namespace Logrotate
 {
-    class ShredFile
+    internal class ShredFile
     {
-        #region p/invoke
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        static extern bool GetDiskFreeSpace(string lpRootPathName,
-           out uint lpSectorsPerCluster,
-           out uint lpBytesPerSector,
-           out uint lpNumberOfFreeClusters,
-           out uint lpTotalNumberOfClusters);
-        #endregion
+
+        #region Constructor
 
         /// <summary>
-        /// path to the file we want to shred
+        ///     Shred a file by writing random data to it
         /// </summary>
-        private string sfile_path;
-
-        /// <summary>
-        /// Shred a file by writing random data to it
-        /// </summary>
-        /// <param name="m_path">the full path to the file.  Can be a UNC path.  Will throw ArgumentException if file does not exist</param>
+        /// <param name="m_path">
+        ///     the full path to the file.  Can be a UNC path.  Will throw ArgumentException if file does not
+        ///     exist
+        /// </param>
         public ShredFile(string m_path)
         {
             if (File.Exists(m_path) == false)
+            {
                 throw new ArgumentException(m_path + " " + Strings.CouldNotBeFound);
-            sfile_path = m_path;
+            }
+            this.sfile_path = m_path;
         }
 
+        #endregion // Constructor
+
+        #region Public Methods
+
         /// <summary>
-        /// Shreds the file using random garbage data and multiple overwrites
+        ///     Shreds the file using random garbage data and multiple overwrites
         /// </summary>
         /// <param name="iShredCycles">number of shred overwrites to perform</param>
         /// <param name="bDebug">flag indicating if this is in debug mode (file will not be shredded if in debug mode)</param>
@@ -61,28 +66,32 @@ namespace logrotate
         /// <returns>True if file was shredded, otherwise false</returns>
         public bool ShredIt(int iShredCycles, bool bDebug)
         {
-            Logging.Log(Strings.ShreddingFile+" " + sfile_path + " ShredCycles = " + iShredCycles,Logging.LogType.Debug);
+            Logging.Log(Strings.ShreddingFile + " " + this.sfile_path + " ShredCycles = " + iShredCycles,
+                Logging.LogType.Debug);
 
             try
             {
-
                 // set attributes in case the file is readonly for some reason
-                File.SetAttributes(sfile_path, FileAttributes.Normal);
+                File.SetAttributes(this.sfile_path, FileAttributes.Normal);
 
                 // get the size of a sector on the disk where the file is located
                 uint SectorsPerCluster;
                 uint BytesPerSector;
                 uint NumberofFreeClusters;
                 uint TotalNumberOfClusters;
-                if (!GetDiskFreeSpace(Path.GetPathRoot(sfile_path), out SectorsPerCluster, out BytesPerSector, out NumberofFreeClusters, out TotalNumberOfClusters))
-                    throw new InvalidOperationException("Error calling Win32 API GetDiskFreeSpace Root Path = " + Path.GetPathRoot(sfile_path));
+                if (
+                    !GetDiskFreeSpace(Path.GetPathRoot(this.sfile_path), out SectorsPerCluster, out BytesPerSector,
+                        out NumberofFreeClusters, out TotalNumberOfClusters))
+                {
+                    throw new InvalidOperationException("Error calling Win32 API GetDiskFreeSpace Root Path = " +
+                                                         Path.GetPathRoot(this.sfile_path));
+                }
 
                 //Logging.Log("Number of bytes per sector for " + Path.GetPathRoot(sfile_path) + " is " + BytesPerSector, Logging.LogType.Debug);
 
                 if (bDebug == false)
                 {
-
-                    FileInfo fi = new FileInfo(sfile_path);
+                    FileInfo fi = new FileInfo(this.sfile_path);
                     // calculate number of sectors in the file based on sector size
                     double SectorsInFile = Math.Ceiling((double)(fi.Length / BytesPerSector));
 
@@ -93,7 +102,7 @@ namespace logrotate
                     RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
 
                     // open file and write data iShredCycles to it
-                    FileStream fs = new FileStream(sfile_path, FileMode.Open);
+                    FileStream fs = new FileStream(this.sfile_path, FileMode.Open);
                     for (int ipass = 0; ipass < iShredCycles; ipass++)
                     {
                         // go to beginning of file
@@ -114,15 +123,14 @@ namespace logrotate
 
                     // change the dates of the file to help prevent recovery
                     DateTime dt = new DateTime(2037, 1, 1, 0, 0, 0);
-                    File.SetCreationTime(sfile_path, dt);
-                    File.SetLastAccessTime(sfile_path, dt);
-                    File.SetLastWriteTime(sfile_path, dt);
+                    File.SetCreationTime(this.sfile_path, dt);
+                    File.SetLastAccessTime(this.sfile_path, dt);
+                    File.SetLastWriteTime(this.sfile_path, dt);
 
                     // delete the file
-                    File.Delete(sfile_path);
+                    File.Delete(this.sfile_path);
                     //Logging.Log(sfile_path + " has been shredded", Logging.LogType.Debug);
                 }
-
             }
             catch (Exception e)
             {
@@ -131,7 +139,28 @@ namespace logrotate
             }
 
             return true;
-
         }
+
+        #endregion // Public Methods
+
+        #region P/Invoke
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern bool GetDiskFreeSpace(string lpRootPathName,
+                                             out uint lpSectorsPerCluster,
+                                             out uint lpBytesPerSector,
+                                             out uint lpNumberOfFreeClusters,
+                                             out uint lpTotalNumberOfClusters);
+
+        #endregion
+
+        #region Fields
+
+        /// <summary>
+        ///     path to the file we want to shred
+        /// </summary>
+        string sfile_path;
+
+        #endregion // Fields
     }
 }
