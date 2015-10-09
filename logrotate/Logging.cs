@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -21,7 +18,7 @@ using System.Text;
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace logrotate
+namespace Logrotate
 {
     /// <summary>
     /// This class exposes static functions to handle different logging functions, including logging exceptions

@@ -1,6 +1,14 @@
-﻿using System;
+﻿// LogrotateConf.cs
+// Created by MUHAMMAD ABUBAKAR
+// Created: 2015-09-19 12:26 PM
+// Modified: 2015-10-02 10:40 AM
+
+#region Imports
+
+using System;
 using System.Collections.Generic;
-using System.Text;
+
+#endregion
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -20,641 +28,716 @@ using System.Text;
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace logrotate
+namespace Logrotate
 {
-    class logrotateconf
+    internal class LogrotateConf
     {
-        #region Private variables
-        private bool bcompress = true;
-        //private string scompresscmd = "gzip";
-        //private string suncompressedcmd = "gunzip";
-        private string scompressext = "gz";
-        //private string scompressoptions = "-9";
-        private bool bcopy = false;
-        private bool bcopytruncate = false;
-        private bool bcreate = false;
-        private bool bdaily = false;
-        private bool bdateext = false;
-        private string sdateformat = "-%Y%m%d";
-        private bool bdelaycompress = false;
-        private bool bifempty = true;
-        private string smail = "";
-        private string ssmtpserver = "";
-        private int ismtpport = 25;
-        private bool bsmtpssl = false;
-        private string ssmtpuser = "";
-        private string ssmtpuserpwd = "";
-        private string ssmtpfrom = Strings.ProgramName + "@" + Environment.MachineName;
-        private string sinclude = "";
-        private long iminsize = 0;
-        private int imaxage = 0;
-        private bool bmissingok = false;
-        private bool bmonthly = false;
-        private bool bmaillast = true;
-        private string solddir = "";
-        private List<string> spostrotate = null;
-        private List<string> sprerotate = null;
-        private List<string> sfirstaction = null;
-        private List<string> slastaction = null;
-        private int irotate = 0;
-        private long lsize = 0;
-        private bool bsharedscripts = false;
-        private int istart = 1;
-        private string[] stabooext = { ".swp" };
-        private bool bweekly = false;
-        private bool byearly = false;
-        private bool bshred = false;
-        private int ishredcycles = 3;
-        
-
-        private bool bpostrotate = false;
-        private bool bprerotate = false;
-        private bool bfirstaction = false;
-        private bool blastaction = false;
-
-        private int process_count = 0;
-
-        #endregion
-
-        #region Public properties
-
-        public int ProcessCount
-        {
-            get { return process_count; }
-        }
-
-        public bool Compress
-        {
-            get { return bcompress; }
-        }
-
-        public string CompressExt
-        {
-            get { return scompressext; }
-        }
-        public bool DelayCompress
-        {
-            get { return bdelaycompress; }
-        }
-
-        public bool MissingOK
-        {
-            get { return bmissingok; }
-        }
-
-        public bool IfEmpty
-        {
-            get { return bifempty; }
-        }
-
-        public long Size
-        {
-            get { return lsize; }
-        }
-
-        public bool Copy
-        {
-            get { return bcopy; }
-        }
-
-        public bool DateExt
-        {
-            get { return bdateext; }
-        }
-
-        public List<string> PreRotate
-        {
-            get { return sprerotate; }
-        }
-
-        public List<string> PostRotate
-        {
-            get { return spostrotate; }
-        }
-        public List<string> FirstAction
-        {
-            get { return sfirstaction; }
-        }
-        public List<string> LastAction
-        {
-            get { return slastaction; }
-        }
-
-        public string DateFormat
-        {
-            get { return sdateformat; }
-        }
-
-        private void PrintDebug(string line, string value,bool bDebug)
-        {
-            Logging.Log(Strings.Setting+" " + line + Strings.To + value,Logging.LogType.Debug);
-        }
-
-        public int Start
-        {
-            get { return istart; }
-        }
-
-        public string OldDir
-        {
-            get { return solddir; }
-        }
-
-        public bool CopyTruncate
-        {
-            get { return bcopytruncate; }
-        }
-
-        public bool Create
-        {
-            get { return bcreate; }
-        }
-
-        public long MinSize
-        {
-            get { return iminsize; }
-        }
-
-        public bool Daily
-        {
-            get { return bdaily; }
-        }
-        public bool Monthly
-        {
-            get { return bmonthly; }
-        }
-        public bool Yearly
-        {
-            get { return byearly; }
-        }
-        public bool Shred
-        {
-            get { return bshred; }
-        }
-        public int ShredCycles
-        {
-            get { return ishredcycles; }
-        }
-        public bool MailLast
-        {
-            get { return bmaillast; }
-        }
-        public int SMTPPort
-        {
-            get { return ismtpport; }
-        }
-        public string SMTPServer
-        {
-            get { return ssmtpserver; }
-        }
-        public string SMTPUserName
-        {
-            get { return ssmtpuser; }
-        }
-        public string SMTPUserPassword
-        {
-            get { return ssmtpuserpwd; }
-        }
-        
-        public string MailAddress
-        {
-            get { return smail; }
-        }
-        public string MailFrom
-        {
-            get { return ssmtpfrom; }
-        }
-        public bool SMTPUseSSL
-        {
-            get { return bsmtpssl; }
-        }
-        public int MaxAge
-        {
-            get { return imaxage; }
-        }
-        public bool SharedScripts
-        {
-            get { return bsharedscripts; }
-        }
-        public bool Weekly
-        {
-            get { return bweekly; }
-        }
-        public int Rotate
-        {
-            get { return irotate; }
-        }
-        public string Include
-        {
-            get { return sinclude; }
-        }
-        public string[] TabooList
-        {
-            get { return stabooext; }
-        }
-        #endregion
+        #region Constructors
 
         /// <summary>
-        /// Default constructor
+        ///     Default constructor
         /// </summary>
-        public logrotateconf()
+        public LogrotateConf()
         {
         }
 
         /// <summary>
-        /// This constructor will create a logrotateconf object as a copy of another one
+        ///     This constructor will create a logrotateconf object as a copy of another one
         /// </summary>
         /// <param name="m_source">The source logrotateconf object to copy</param>
-        public logrotateconf(logrotateconf m_source)
+        public LogrotateConf( LogrotateConf m_source )
         {
-            bcompress = m_source.bcompress;
+            this.bcompress = m_source.bcompress;
             //scompresscmd = m_source.scompresscmd;
             //suncompressedcmd = m_source.suncompressedcmd;
-            scompressext = m_source.scompressext;
+            this.scompressext = m_source.scompressext;
             //scompressoptions = m_source.scompressoptions;
-            bcopy = m_source.bcopy;
-            bcopytruncate = m_source.bcopytruncate;
-            bcreate = m_source.bcreate;
-            bdaily = m_source.bdaily;
-            bdateext = m_source.bdateext;
-            sdateformat = m_source.sdateformat;
-            bdelaycompress = m_source.bdelaycompress;
-            bifempty = m_source.bifempty;
-            smail = m_source.smail;
-            iminsize = m_source.iminsize;
-            imaxage = m_source.imaxage;
-            bmissingok = m_source.bmissingok;
-            bmonthly = m_source.bmonthly;
-            solddir = m_source.solddir;
-            spostrotate = m_source.spostrotate;
-            sprerotate = m_source.sprerotate;
-            sfirstaction = m_source.sfirstaction;
-            slastaction = m_source.slastaction;
-            irotate = m_source.irotate;
-            lsize = m_source.lsize;
-            bsharedscripts = m_source.bsharedscripts;
-            istart = m_source.istart;
-            stabooext = m_source.stabooext;
-            bweekly = m_source.bweekly;
-            byearly = m_source.byearly;
-            bshred = m_source.bshred;
-            ishredcycles = m_source.ishredcycles;
-            bmaillast = m_source.bmaillast;
-            ssmtpserver = m_source.ssmtpserver;
-            ismtpport = m_source.ismtpport;
-            bsmtpssl = m_source.bsmtpssl;
-            ssmtpuser = m_source.ssmtpuser;
-            ssmtpuserpwd = m_source.ssmtpuserpwd;
-            sinclude = m_source.sinclude;
-            stabooext = m_source.stabooext;
-            ssmtpfrom = m_source.ssmtpfrom;
+            this.bcopy = m_source.bcopy;
+            this.bcopytruncate = m_source.bcopytruncate;
+            this.bcreate = m_source.bcreate;
+            this.bdaily = m_source.bdaily;
+            this.bdateext = m_source.bdateext;
+            this.sdateformat = m_source.sdateformat;
+            this.bdelaycompress = m_source.bdelaycompress;
+            this.bifempty = m_source.bifempty;
+            this.smail = m_source.smail;
+            this.iminsize = m_source.iminsize;
+            this.imaxage = m_source.imaxage;
+            this.bmissingok = m_source.bmissingok;
+            this.bmonthly = m_source.bmonthly;
+            this.solddir = m_source.solddir;
+            this.spostrotate = m_source.spostrotate;
+            this.sprerotate = m_source.sprerotate;
+            this.sfirstaction = m_source.sfirstaction;
+            this.slastaction = m_source.slastaction;
+            this.irotate = m_source.irotate;
+            this.lsize = m_source.lsize;
+            this.bsharedscripts = m_source.bsharedscripts;
+            this.istart = m_source.istart;
+            this.stabooext = m_source.stabooext;
+            this.bweekly = m_source.bweekly;
+            this.byearly = m_source.byearly;
+            this.bshred = m_source.bshred;
+            this.ishredcycles = m_source.ishredcycles;
+            this.bmaillast = m_source.bmaillast;
+            this.ssmtpserver = m_source.ssmtpserver;
+            this.ismtpport = m_source.ismtpport;
+            this.bsmtpssl = m_source.bsmtpssl;
+            this.ssmtpuser = m_source.ssmtpuser;
+            this.ssmtpuserpwd = m_source.ssmtpuserpwd;
+            this.sinclude = m_source.sinclude;
+            this.stabooext = m_source.stabooext;
+            this.ssmtpfrom = m_source.ssmtpfrom;
         }
 
+        #endregion // Constructors
+
+        #region Public Methods
+
         /// <summary>
-        /// Parses the supplied line and extracts directives and options
+        ///     Parses the supplied line and extracts directives and options
         /// </summary>
         /// <param name="line">A string containing the line to parse</param>
         /// <param name="bDebug">Boolean indicating if logrotate is running in debug mode</param>
         /// <returns>True if a directive was found, false if no directive found</returns>
-        public bool Parse(string line, bool bDebug)
+        public bool Parse( string line, bool bDebug )
         {
-            string[] split = line.Split(new char[] {' '});
+            string[] split = line.Split( ' ' );
 
 
             // if we are currently inside of a postrotate,prerotate,lastaction, or firstaction block
             // look for the endscript directive, otherwise add the line to the array for the appropriate block type
-            if ((bpostrotate == true) || (bprerotate == true) || (blastaction == true) || (bfirstaction == true))
+            if ( this.bpostrotate || this.bprerotate || this.blastaction || this.bfirstaction )
             {
-                if (split[0] == "endscript")
+                if ( split[0] == "endscript" )
                 {
-                    bpostrotate = bprerotate = blastaction = bfirstaction = false;
+                    this.bpostrotate = this.bprerotate = this.blastaction = this.bfirstaction = false;
                 }
                 else
                 {
-                    if (bpostrotate)
-                        ParsePostRotate(line);
-                    if (bprerotate)
-                        ParsePreRotate(line);
-                    if (blastaction)
-                        ParseLastAction(line);
-                    if (bfirstaction)
-                        ParseFirstAction(line);
+                    if ( this.bpostrotate )
+                    {
+                        this.ParsePostRotate( line );
+                    }
+                    if ( this.bprerotate )
+                    {
+                        this.ParsePreRotate( line );
+                    }
+                    if ( this.blastaction )
+                    {
+                        this.ParseLastAction( line );
+                    }
+                    if ( this.bfirstaction )
+                    {
+                        this.ParseFirstAction( line );
+                    }
                 }
                 return true;
             }
 
-            switch (split[0])
+            switch ( split[0] )
             {
                 case "compress":
-                    bcompress = true;
-                    PrintDebug(split[0], bcompress.ToString(), bDebug);
+                    this.bcompress = true;
+                    this.PrintDebug( split[0], this.bcompress.ToString(), bDebug );
                     break;
                 case "nocompress":
-                    bcompress = false;
-                    PrintDebug(split[0], bcompress.ToString(), bDebug);
+                    this.bcompress = false;
+                    this.PrintDebug( split[0], this.bcompress.ToString(), bDebug );
                     break;
                 case "copy":
-                    bcopy = true;
-                    PrintDebug(split[0], bcopy.ToString(), bDebug);
+                    this.bcopy = true;
+                    this.PrintDebug( split[0], this.bcopy.ToString(), bDebug );
                     break;
                 case "nocopy":
-                    bcopy = false;
-                    PrintDebug(split[0], bcopy.ToString(), bDebug);
+                    this.bcopy = false;
+                    this.PrintDebug( split[0], this.bcopy.ToString(), bDebug );
                     break;
                 case "copytruncate":
-                    bcopytruncate = true;
-                    PrintDebug(split[0], bcopytruncate.ToString(), bDebug);
+                    this.bcopytruncate = true;
+                    this.PrintDebug( split[0], this.bcopytruncate.ToString(), bDebug );
                     break;
                 case "nocopytruncate":
-                    bcopytruncate = false;
-                    PrintDebug(split[0], bcopytruncate.ToString(), bDebug);
+                    this.bcopytruncate = false;
+                    this.PrintDebug( split[0], this.bcopytruncate.ToString(), bDebug );
                     break;
                 case "create":
-                    bcreate = true;
-                    PrintDebug(split[0], bcreate.ToString(), bDebug);
+                    this.bcreate = true;
+                    this.PrintDebug( split[0], this.bcreate.ToString(), bDebug );
                     break;
                 case "nocreate":
-                    bcreate = false;
-                    PrintDebug(split[0], bcreate.ToString(), bDebug);
+                    this.bcreate = false;
+                    this.PrintDebug( split[0], this.bcreate.ToString(), bDebug );
                     break;
                 case "daily":
-                    bdaily = true;
-                    PrintDebug(split[0], bdaily.ToString(), bDebug);
+                    this.bdaily = true;
+                    this.PrintDebug( split[0], this.bdaily.ToString(), bDebug );
                     break;
                 case "delaycompress":
-                    bdelaycompress = true;
-                    PrintDebug(split[0], bdelaycompress.ToString(), bDebug);
+                    this.bdelaycompress = true;
+                    this.PrintDebug( split[0], this.bdelaycompress.ToString(), bDebug );
                     break;
                 case "ifempty":
-                    bifempty = true;
-                    PrintDebug(split[0], bifempty.ToString(), bDebug);
+                    this.bifempty = true;
+                    this.PrintDebug( split[0], this.bifempty.ToString(), bDebug );
+                    break;
+                 case "notifempty":
+                    this.bnotifempty = true;
+                    this.PrintDebug( split[0], this.bifempty.ToString(), bDebug );
                     break;
                 case "missingok":
-                    bmissingok = true;
-                    PrintDebug(split[0], bmissingok.ToString(), bDebug);
+                    this.bmissingok = true;
+                    this.PrintDebug( split[0], this.bmissingok.ToString(), bDebug );
                     break;
                 case "monthly":
-                    bmonthly = true;
-                    PrintDebug(split[0], bmonthly.ToString(), bDebug);
+                    this.bmonthly = true;
+                    this.PrintDebug( split[0], this.bmonthly.ToString(), bDebug );
                     break;
                 case "sharedscripts":
-                    bsharedscripts = true;
-                    bcreate = true;
-                    PrintDebug(split[0], bsharedscripts.ToString(), bDebug);
+                    this.bsharedscripts = true;
+                    this.bcreate = true;
+                    this.PrintDebug( split[0], this.bsharedscripts.ToString(), bDebug );
                     break;
                 case "nosharedscripts":
-                    bsharedscripts = false;
-                    PrintDebug(split[0], bsharedscripts.ToString(), bDebug);
+                    this.bsharedscripts = false;
+                    this.PrintDebug( split[0], this.bsharedscripts.ToString(), bDebug );
                     break;
                 case "weekly":
-                    bweekly = true;
-                    PrintDebug(split[0], bweekly.ToString(), bDebug);
+                    this.bweekly = true;
+                    this.PrintDebug( split[0], this.bweekly.ToString(), bDebug );
                     break;
                 case "yearly":
-                    byearly = true;
-                    PrintDebug(split[0], byearly.ToString(), bDebug);
+                    this.byearly = true;
+                    this.PrintDebug( split[0], this.byearly.ToString(), bDebug );
                     break;
                 case "compresscmd":
                     //scompresscmd = split[1];
                     //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                    this.PrintDebug( split[0], Strings.UnknownDirective, bDebug );
                     break;
                 case "uncompresscmd":
                     //suncompressedcmd = split[1];
                     //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                    this.PrintDebug( split[0], Strings.UnknownDirective, bDebug );
                     break;
                 case "compressext":
-                    scompressext = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.scompressext = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "scompressoptions":
                     //scompressoptions = split[1];
                     //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                    this.PrintDebug( split[0], Strings.UnknownDirective, bDebug );
                     break;
                 case "dateformat":
-                    sdateformat = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.sdateformat = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "mail":
-                    smail = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.smail = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "nomail":
-                    smail = "";
-                    PrintDebug(split[0], "", bDebug);
+                    this.smail = "";
+                    this.PrintDebug( split[0], "", bDebug );
                     break;
                 case "maxage":
-                    imaxage = Convert.ToInt32(split[1]);
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.imaxage = Convert.ToInt32( split[1] );
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "olddir":
-                    solddir = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.solddir = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "noolddir":
-                    solddir = "";
-                    PrintDebug(split[0], "", bDebug);
+                    this.solddir = "";
+                    this.PrintDebug( split[0], "", bDebug );
                     break;
                 case "rotate":
-                    irotate = Convert.ToInt32(split[1]);
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.irotate = Convert.ToInt32( split[1] );
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "minsize":
                     // the size can be for following:  100, 100k, 100m, 100g
-                    string minsize_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
-                    if (Char.IsNumber(minsize_type, 0))
-                        iminsize = Convert.ToInt64(split[1]);
+                    string minsize_type = split[1].Substring( split[1].Length - 1, 1 ).ToUpper();
+                    if ( Char.IsNumber( minsize_type, 0 ) )
+                    {
+                        this.iminsize = Convert.ToInt64( split[1] );
+                    }
                     else
                     {
-                        if (minsize_type == "K")
-                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
-                        else if (minsize_type == "M")
-                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
-                        else if (minsize_type == "G")
-                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
+                        if ( minsize_type == "K" )
+                        {
+                            this.iminsize = Convert.ToInt64( split[1].Substring( 0, split[1].Length - 1 ) ) * 1024;
+                        }
+                        else if ( minsize_type == "M" )
+                        {
+                            this.iminsize = Convert.ToInt64( split[1].Substring( 0, split[1].Length - 1 ) ) * 1048576;
+                        }
+                        else if ( minsize_type == "G" )
+                        {
+                            this.iminsize = Convert.ToInt64( split[1].Substring( 0, split[1].Length - 1 ) ) * 1073741824;
+                        }
                         else
                         {
-                            Logging.Log(Strings.UnknownSizeType+" " + line,Logging.LogType.Error);
+                            Logging.Log( Strings.UnknownSizeType + " " + line, Logging.LogType.Error );
                             return false;
                         }
                     }
 
-                    PrintDebug(split[0], lsize.ToString(), bDebug);
+                    this.PrintDebug( split[0], this.lsize.ToString(), bDebug );
 
                     break;
                 case "shred":
-                    bshred = true;
-                    PrintDebug(split[0], bshred.ToString(), bDebug);
+                    this.bshred = true;
+                    this.PrintDebug( split[0], this.bshred.ToString(), bDebug );
                     break;
                 case "noshred":
-                    bshred = false;
-                    PrintDebug(split[0], bshred.ToString(), bDebug);
+                    this.bshred = false;
+                    this.PrintDebug( split[0], this.bshred.ToString(), bDebug );
                     break;
                 case "shredcycles":
-                    ishredcycles = Convert.ToInt32(split[1]);
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.ishredcycles = Convert.ToInt32( split[1] );
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "start":
-                    istart = Convert.ToInt32(split[1]);
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.istart = Convert.ToInt32( split[1] );
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "postrotate":
-                    bpostrotate = true;
-                    PrintDebug(split[0], bpostrotate.ToString(), bDebug);
+                    this.bpostrotate = true;
+                    this.PrintDebug( split[0], this.bpostrotate.ToString(), bDebug );
                     break;
                 case "prerotate":
-                    bprerotate = true;
-                    PrintDebug(split[0], bprerotate.ToString(), bDebug);
+                    this.bprerotate = true;
+                    this.PrintDebug( split[0], this.bprerotate.ToString(), bDebug );
                     break;
                 case "firstaction":
-                    bfirstaction = true;
-                    PrintDebug(split[0], bfirstaction.ToString(), bDebug);
+                    this.bfirstaction = true;
+                    this.PrintDebug( split[0], this.bfirstaction.ToString(), bDebug );
                     break;
                 case "lastaction":
-                    blastaction = true;
-                    PrintDebug(split[0], blastaction.ToString(), bDebug);
+                    this.blastaction = true;
+                    this.PrintDebug( split[0], this.blastaction.ToString(), bDebug );
                     break;
-                
+
                 case "size":
                     // the size can be for following:  100, 100k, 100m, 100g
-                    string size_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
-                    if (Char.IsNumber(size_type, 0))
-                        lsize = Convert.ToInt64(split[1]);
+                    string size_type = split[1].Substring( split[1].Length - 1, 1 ).ToUpper();
+                    if ( Char.IsNumber( size_type, 0 ) )
+                    {
+                        this.lsize = Convert.ToInt64( split[1] );
+                    }
                     else
                     {
-                        if (size_type == "K")
-                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
-                        else if (size_type == "M")
-                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
-                        else if (size_type == "G")
-                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
+                        if ( size_type == "K" )
+                        {
+                            this.lsize = Convert.ToInt64( split[1].Substring( 0, split[1].Length - 1 ) ) * 1024;
+                        }
+                        else if ( size_type == "M" )
+                        {
+                            this.lsize = Convert.ToInt64( split[1].Substring( 0, split[1].Length - 1 ) ) * 1048576;
+                        }
+                        else if ( size_type == "G" )
+                        {
+                            this.lsize = Convert.ToInt64( split[1].Substring( 0, split[1].Length - 1 ) ) * 1073741824;
+                        }
                         else
                         {
-                            Logging.Log(Strings.UnknownSizeType+" " + line,Logging.LogType.Error);
+                            Logging.Log( Strings.UnknownSizeType + " " + line, Logging.LogType.Error );
                             return false;
                         }
                     }
-                    
-                    PrintDebug(split[0], lsize.ToString(), bDebug);
+
+                    this.PrintDebug( split[0], this.lsize.ToString(), bDebug );
                     break;
                 case "mailfirst":
-                    bmaillast = false;
-                    PrintDebug(split[0], bmaillast.ToString(), bDebug);
+                    this.bmaillast = false;
+                    this.PrintDebug( split[0], this.bmaillast.ToString(), bDebug );
                     break;
                 case "maillast":
-                    bmaillast = true;
-                    PrintDebug(split[0], bmaillast.ToString(), bDebug);
+                    this.bmaillast = true;
+                    this.PrintDebug( split[0], this.bmaillast.ToString(), bDebug );
                     break;
                 case "smtpserver":
-                    ssmtpserver = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.ssmtpserver = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "smtpport":
-                    ismtpport = Convert.ToInt32(split[1]);
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.ismtpport = Convert.ToInt32( split[1] );
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "smtpssl":
-                    bsmtpssl = true;
-                    PrintDebug(split[0], bsmtpssl.ToString(), bDebug);
+                    this.bsmtpssl = true;
+                    this.PrintDebug( split[0], this.bsmtpssl.ToString(), bDebug );
                     break;
                 case "nosmtpssl":
-                    bsmtpssl = false;
-                    PrintDebug(split[0], bsmtpssl.ToString(), bDebug);
+                    this.bsmtpssl = false;
+                    this.PrintDebug( split[0], this.bsmtpssl.ToString(), bDebug );
                     break;
                 case "smtpuser":
-                    ssmtpuser = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.ssmtpuser = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "smtpfrom":
-                    ssmtpfrom = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.ssmtpfrom = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 case "smtpuserpwd":
-                    ssmtpuserpwd = split[1];
-                    PrintDebug(split[0], "****", bDebug);
+                    this.ssmtpuserpwd = split[1];
+                    this.PrintDebug( split[0], "****", bDebug );
                     break;
                 case "dateext":
-                    bdateext = true;
-                    PrintDebug(split[0], bdateext.ToString(), bDebug);
+                    this.bdateext = true;
+                    this.PrintDebug( split[0], this.bdateext.ToString(), bDebug );
                     break;
                 case "tabooext":
                     int taboo_start_idx = 2;
-                    if (split[1] != "+")
+                    if ( split[1] != "+" )
                     {
                         taboo_start_idx = 1;
-                        Array.Resize<string>(ref stabooext,0);
+                        Array.Resize( ref this.stabooext, 0 );
                     }
-                    for (int j = taboo_start_idx; j < split.Length; j++ )
+                    for ( int j = taboo_start_idx; j < split.Length; j++ )
                     {
-                        Array.Resize<string>(ref stabooext, stabooext.Length + 1);
-                        stabooext[stabooext.Length - 1] = split[j];
+                        Array.Resize( ref this.stabooext, this.stabooext.Length + 1 );
+                        this.stabooext[this.stabooext.Length - 1] = split[j];
                     }
                     break;
                 case "include":
-                    sinclude = split[1];
-                    PrintDebug(split[0], split[1], bDebug);
+                    this.sinclude = split[1];
+                    this.PrintDebug( split[0], split[1], bDebug );
                     break;
                 default:
-                    Logging.Log(Strings.UnknownDirective+" " + line,Logging.LogType.Error);
+                    Logging.Log( Strings.UnknownDirective + " " + line, Logging.LogType.Error );
                     return false;
             }
             return true;
         }
 
-        private void ParseFirstAction(string line)
-        {
-            if (slastaction == null)
-                slastaction = new List<string>();
-
-            slastaction.Add(line);
-        }
-
-        private void ParseLastAction(string line)
-        {
-            if (sfirstaction == null)
-                sfirstaction = new List<string>();
-
-            sfirstaction.Add(line);
-        }
-
-        private void ParsePreRotate(string line)
-        {
-            if (sprerotate == null)
-                sprerotate = new List<string>();
-
-            sprerotate.Add(line);
-        }
-
-        private void ParsePostRotate(string line)
-        {
-            if (spostrotate == null)
-                spostrotate = new List<string>();
-
-            spostrotate.Add(line);
-        }
-
         public void Clear_PreRotate()
         {
-            sprerotate.Clear();
-            sprerotate = null;
+            this.sprerotate.Clear();
+            this.sprerotate = null;
         }
 
         public void Clear_PostRotate()
         {
-            spostrotate.Clear();
-            spostrotate = null;
+            this.spostrotate.Clear();
+            this.spostrotate = null;
         }
 
         public void Increment_ProcessCount()
         {
-            process_count++;
+            this.process_count++;
         }
 
         public void Decrement_ProcessCount()
         {
-            process_count--;
+            this.process_count--;
         }
+
+        #endregion // Public Methods
+
+        #region Private Methods
+
+        void ParseFirstAction( string line )
+        {
+            if ( this.slastaction == null )
+            {
+                this.slastaction = new List<string>();
+            }
+
+            this.slastaction.Add( line );
+        }
+
+        void ParseLastAction( string line )
+        {
+            if ( this.sfirstaction == null )
+            {
+                this.sfirstaction = new List<string>();
+            }
+
+            this.sfirstaction.Add( line );
+        }
+
+        void ParsePreRotate( string line )
+        {
+            if ( this.sprerotate == null )
+            {
+                this.sprerotate = new List<string>();
+            }
+
+            this.sprerotate.Add( line );
+        }
+
+        void ParsePostRotate( string line )
+        {
+            if ( this.spostrotate == null )
+            {
+                this.spostrotate = new List<string>();
+            }
+
+            this.spostrotate.Add( line );
+        }
+
+        #endregion // Private Methods
+
+        #region Properties
+
+        public int ProcessCount
+        {
+            get { return this.process_count; }
+        }
+
+        public bool Compress
+        {
+            get { return this.bcompress; }
+        }
+
+        public string CompressExt
+        {
+            get { return this.scompressext; }
+        }
+
+        public bool DelayCompress
+        {
+            get { return this.bdelaycompress; }
+        }
+
+        public bool MissingOK
+        {
+            get { return this.bmissingok; }
+        }
+
+        public bool IfEmpty
+        {
+            get { return this.bifempty; }
+        }
+        public bool NotIfEmpty
+        {
+            get { return this.bnotifempty; }
+        }
+
+        public long Size
+        {
+            get { return this.lsize; }
+        }
+
+        public bool Copy
+        {
+            get { return this.bcopy; }
+        }
+
+        public bool DateExt
+        {
+            get { return this.bdateext; }
+        }
+
+        public List<string> PreRotate
+        {
+            get { return this.sprerotate; }
+        }
+
+        public List<string> PostRotate
+        {
+            get { return this.spostrotate; }
+        }
+
+        public List<string> FirstAction
+        {
+            get { return this.sfirstaction; }
+        }
+
+        public List<string> LastAction
+        {
+            get { return this.slastaction; }
+        }
+
+        public string DateFormat
+        {
+            get { return this.sdateformat; }
+        }
+
+        void PrintDebug( string line, string value, bool bDebug )
+        {
+            Logging.Log( Strings.Setting + " " + line + Strings.To + value, Logging.LogType.Debug );
+        }
+
+        public int Start
+        {
+            get { return this.istart; }
+        }
+
+        public string OldDir
+        {
+            get { return this.solddir; }
+        }
+
+        public bool CopyTruncate
+        {
+            get { return this.bcopytruncate; }
+        }
+
+        public bool Create
+        {
+            get { return this.bcreate; }
+        }
+
+        public long MinSize
+        {
+            get { return this.iminsize; }
+        }
+
+        public bool Daily
+        {
+            get { return this.bdaily; }
+        }
+
+        public bool Monthly
+        {
+            get { return this.bmonthly; }
+        }
+
+        public bool Yearly
+        {
+            get { return this.byearly; }
+        }
+
+        public bool Shred
+        {
+            get { return this.bshred; }
+        }
+
+        public int ShredCycles
+        {
+            get { return this.ishredcycles; }
+        }
+
+        public bool MailLast
+        {
+            get { return this.bmaillast; }
+        }
+
+        public int SMTPPort
+        {
+            get { return this.ismtpport; }
+        }
+
+        public string SMTPServer
+        {
+            get { return this.ssmtpserver; }
+        }
+
+        public string SMTPUserName
+        {
+            get { return this.ssmtpuser; }
+        }
+
+        public string SMTPUserPassword
+        {
+            get { return this.ssmtpuserpwd; }
+        }
+
+        public string MailAddress
+        {
+            get { return this.smail; }
+        }
+
+        public string MailFrom
+        {
+            get { return this.ssmtpfrom; }
+        }
+
+        public bool SMTPUseSSL
+        {
+            get { return this.bsmtpssl; }
+        }
+
+        public int MaxAge
+        {
+            get { return this.imaxage; }
+        }
+
+        public bool SharedScripts
+        {
+            get { return this.bsharedscripts; }
+        }
+
+        public bool Weekly
+        {
+            get { return this.bweekly; }
+        }
+
+        public int Rotate
+        {
+            get { return this.irotate; }
+        }
+
+        public string Include
+        {
+            get { return this.sinclude; }
+        }
+
+        public string[] TabooList
+        {
+            get { return this.stabooext; }
+        }
+
+        #endregion // Properties
+
+        #region Fields
+
+        bool bcompress = true;
+        //private string scompresscmd = "gzip";
+        //private string suncompressedcmd = "gunzip";
+        string scompressext = "gz";
+        //private string scompressoptions = "-9";
+        bool bcopy;
+        bool bcopytruncate;
+        bool bcreate;
+        bool bdaily;
+        bool bdateext;
+        string sdateformat = "-%Y%m%d%H%M%S";
+        bool bdelaycompress;
+        bool bifempty = false;
+        bool bnotifempty = true;
+        string smail = "";
+        string ssmtpserver = "";
+        int ismtpport = 25;
+        bool bsmtpssl;
+        string ssmtpuser = "";
+        string ssmtpuserpwd = "";
+        string ssmtpfrom = Strings.ProgramName + "@" + Environment.MachineName;
+        string sinclude = "";
+        long iminsize;
+        int imaxage;
+        bool bmissingok;
+        bool bmonthly;
+        bool bmaillast = true;
+        string solddir = "";
+        List<string> spostrotate;
+        List<string> sprerotate;
+        List<string> sfirstaction;
+        List<string> slastaction;
+        int irotate;
+        long lsize;
+        bool bsharedscripts;
+        int istart = 1;
+        string[] stabooext = {".swp"};
+        bool bweekly;
+        bool byearly;
+        bool bshred;
+        int ishredcycles = 3;
+
+
+        bool bpostrotate;
+        bool bprerotate;
+        bool bfirstaction;
+        bool blastaction;
+
+        int process_count;
+
+        #endregion // Fields
     }
 }
