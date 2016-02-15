@@ -667,7 +667,7 @@ namespace logrotate
                 return;
 
             // look for any rotated log files, and rename them with the count if not using dateext
-            Regex pattern = new Regex("[0-9]");
+            Regex pattern = new Regex("^[0-9]$");
 
             // sort alphabetically reversed
             Array.Sort<FileSystemInfo>(fis, delegate(FileSystemInfo a, FileSystemInfo b)
