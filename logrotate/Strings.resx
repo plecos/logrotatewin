@@ -279,4 +279,7 @@
   <data name="WithWildcardPattern" xml:space="preserve">
     <value>with wildcard pattern</value>
   </data>
+  <data name="AddingFilePath" xml:space="preserve">
+    <value>Adding File: </value>
+  </data>
 </root>

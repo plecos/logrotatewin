@@ -1137,6 +1137,7 @@ namespace logrotate
                             }
 
                             lrc.Increment_ProcessCount();
+                            Logging.Log(Strings.AddingFilePath + "'" + split + "'", Logging.LogType.Debug);    // ND
                             FilePathConfigSection.Add(split, lrc);
                             split = "";
                         }
