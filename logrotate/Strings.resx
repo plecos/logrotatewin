@@ -229,7 +229,7 @@
     <value>Will not rotate since log file is not greater than minimum file size</value>
   </data>
   <data name="ParseConfigFile" xml:space="preserve">
-    <value>Parsing configuraiton file</value>
+    <value>Parsing configuration file</value>
   </data>
   <data name="RotateBasedonFileSize" xml:space="preserve">
     <value>Rotate file based on file size</value>
@@ -278,5 +278,19 @@
   </data>
   <data name="WithWildcardPattern" xml:space="preserve">
     <value>with wildcard pattern</value>
+  </data>
+  <data name="AddingFilePath" xml:space="preserve">
+    <value>Adding File: </value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>AFTER:  </value>
+    <comment>Two spaces after the colon (:)</comment>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>BEFORE: </value>
+    <comment>One space after the colon (:)</comment>
+  </data>
+  <data name="RemovingInvalidCharacters" xml:space="preserve">
+    <value>Removing invalid characters from path(s)...</value>
   </data>
 </root>

@@ -1096,55 +1096,91 @@ namespace logrotate
 
         private static void ProcessConfileFileSection(string starting_line, StreamReader sr,logrotateconf lrc)
         {
+            // Remove any invalid characters from the line. On Windows 7, this is an array of 35 characters.
+            // And includes a double quote, and space, which we might want to keep.
+            string stripped_line = starting_line;
+            char[] invalidPathCharsX = Path.GetInvalidPathChars();
+
+            Logging.Log(Strings.RemovingInvalidCharacters, Logging.LogType.Debug);
+            Logging.Log(Strings.Before + stripped_line + "'", Logging.LogType.Debug);
+
+            foreach (char ipc in invalidPathCharsX)
+            {
+                // Don't remove spaces and quotes, yet.
+                if (ipc != ' ' && ipc != '\"')
+                {
+                    while (true) {
+                        int where = stripped_line.IndexOf(ipc);
+                        if (where >= 0)
+                            // Bin the unwanted character.
+                            stripped_line = stripped_line.Remove(where, 1);
+                        else
+                            // We are done with this specific unwanted character.
+                            break;
+                    }
+                }
+            }
+
+            Logging.Log(Strings.After + stripped_line + "'", Logging.LogType.Debug);
+
+            // Now, stripped_line holds only those valid characters, plus comma(s) and space(s).
+            // We can process this stripped_line value much more efficiently now.
+
             // the first part of the line contains the file(s) or folder(s) that will be associated with this section
-            // we need to break this line apart by spaces
+            // we need to break this line apart by spaces, commas or TABs
             string split = "";
             bool bQuotedPath = false;
-            for (int i = 0; i < starting_line.Length; i++)
+            for (int i = 0; i < stripped_line.Length; i++)
             {
-                switch (starting_line[i])
+                switch (stripped_line[i])
                 {
                     // if we see the open brace, we are done
-                    case '{':
-                        i = starting_line.Length;
-                        break;
-                    // if we see a ", then this is either starting or ending a file path with spaces
+                    //case '{':
+                    //    i = stripped_line.Length;
+                    //    break;
+
+                    // if we see a " (quote), then this is either starting or ending a file path with spaces
                     case '\"':
                         if (bQuotedPath == false)
                            bQuotedPath = true;
                         else
                            bQuotedPath = false;
-                        split += starting_line[i];
+
+                        //split += stripped_line[i];
                         break;
-                    case ' ':
+
+                    case ' ':   // Drop through
+                    case ',':   // Drop through
+                    case '\t':  // Drop through
+                    case '{':
                         // we see a space and we are not processing a quote path, so this is a delimeter and treat it as such
+                        // We also can now use a comma (,) and TAB as a delimiter too. Some people like that sort of thing.
                         if (bQuotedPath == false)
                         {
-                            string newsplit = "";
-                            // remove any invalid characters before adding
-                            char[] invalidPathChars = Path.GetInvalidPathChars();
-                            foreach (char ipc in invalidPathChars)
+                            // Check for null files which will result if we have multiple spaces and/or commas
+                            // being used as delimiters between file/path names.
+                            if (split.Length != 0)
                             {
-                                for (int ii = 0; ii < split.Length; ii++)
-                                {
-                                    if (split[ii] != ipc)
-                                    {
-                                        newsplit += split[ii];
-                                    }
-                                }
-                                split = newsplit;
-                                newsplit = "";
+                                lrc.Increment_ProcessCount();
+                                Logging.Log(Strings.AddingFilePath + "'" + split + "'", Logging.LogType.Debug);
+                                FilePathConfigSection.Add(split, lrc);
+                                split = "";
                             }
 
-                            lrc.Increment_ProcessCount();
-                            FilePathConfigSection.Add(split, lrc);
-                            split = "";
+                            // Was it a '{' by any chance?
+                            if (stripped_line[i] == '{') {
+                                i = stripped_line.Length;
+                                break;
+                            }
                         }
                         else
-                            split += starting_line[i];
+                            // Still in a quoted path.
+                            split += stripped_line[i];
+
                         break;
+
                     default:
-                        split += starting_line[i];
+                        split += stripped_line[i];
                         break;
                 }
 
