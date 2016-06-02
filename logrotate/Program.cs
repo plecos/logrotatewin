@@ -1117,7 +1117,9 @@ namespace logrotate
                         split += starting_line[i];
                         break;
                     case ' ':
+                    case ',':
                         // we see a space and we are not processing a quote path, so this is a delimeter and treat it as such
+                        // we also can now use a comma (,) as a separaotor too. Some people like that sort of thing.
                         if (bQuotedPath == false)
                         {
                             string newsplit = "";
@@ -1137,7 +1139,7 @@ namespace logrotate
                             }
 
                             lrc.Increment_ProcessCount();
-                            Logging.Log(Strings.AddingFilePath + "'" + split + "'", Logging.LogType.Debug);    // ND
+                            Logging.Log(Strings.AddingFilePath + "'" + split + "'", Logging.LogType.Debug);
                             FilePathConfigSection.Add(split, lrc);
                             split = "";
                         }
