@@ -1,7 +1,9 @@
 ###############################################################################
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
-* text=auto
+#This is Windows-only project and therefore should use Windows-style EOLs
+#as Visual Studio does not work well with anything other than CRLF
+text eol=crlf
 
 ###############################################################################
 # Set default behavior for command prompt diff.
