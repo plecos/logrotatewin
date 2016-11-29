@@ -1041,7 +1041,12 @@ namespace logrotate
         {
             Logging.Log(Strings.ParseConfigFile+" " + m_path_to_file,Logging.LogType.Verbose);
 
-            StreamReader sr = new StreamReader(m_path_to_file);
+            //StreamReader sr = new StreamReader(m_path_to_file);
+  
+            MemoryStream ms = GetModifiedFile(m_path_to_file);
+  
+            StreamReader sr = new StreamReader(ms, System.Text.Encoding.UTF8, true);
+  
             bool bSawASection = false;
             // read in lines until done
             while (true)
@@ -1064,9 +1069,19 @@ namespace logrotate
                     continue;
                 }
 
+                // every line until we've met { must be a file to rotate
+                //if (!bSawASection)
+                //{
+                //    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
+
+                //    // create a new config object taking defaults from Global Config
+                //    logrotateconf lrc = new logrotateconf(GlobalConfig);
+
+                //    ProcessConfileFileSection(line, sr, lrc);
+                //}
+
                 // see if there is a { in the line.  If so, this is the beginning of a section 
                 // otherwise it may be a global setting
-
                 if (line.Contains("{"))
                 {
                     bSawASection = true;
@@ -1191,6 +1206,31 @@ namespace logrotate
 
         }
 
+        private static MemoryStream GetModifiedFile(string _path)
+        {
+            //we expect files-to-rotate to be put in one line, ending on { and separated by spaces
+            //this function takes care of the case when files are separated by newline
+            //to fix that we read original config file into memory, then replace newlines with space 
+            //all further processing will deal with this modified memory stream instead of original file
+            string data = File.ReadAllText(_path);
+
+            //get position of {
+            Int32 pos = data.IndexOf("{");
+            string data1 = data.Substring(0, pos).Trim();
+
+            //replace all EOLs before pos with spaces
+            string replaceWith = " ";
+            data1 = data1.Replace("\r\n", replaceWith).Replace("\n", replaceWith).Replace("\r", replaceWith);
+
+            //collapse multiple spaces into one
+            data1 = String.Join(" ", data1.Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries));
+
+            string newdata = data1 + " " + data.Substring(pos);
+
+            byte[] bytes = Encoding.ASCII.GetBytes(newdata);
+            MemoryStream s = new MemoryStream(bytes);
+            return s;
+        }
     }
 
     class CmdLineArgs
