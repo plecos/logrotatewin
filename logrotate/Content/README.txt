@@ -1,5 +1,5 @@
 LogRotate for Windows
-Written by Ken Salter (C) 2012-2015
+Written by Ken Salter (C) 2012-2016
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ https://sourceforge.net/projects/logrotatewin/
 
 Requirements:
 
-.NET Framework v2.0 or better
+.NET Framework v4.5 or better
 
 Installation:
 
@@ -31,6 +31,22 @@ Run the setup.exe to install.
 This installation will copy the executable, README.txt, gnu_license.txt, and a sample .conf file to the folder you specify.
 
 Release Notes:
+
+0.0.0.17- 13 Jan 2017 (beta) - merge changes from Github contributors
+                               changed default .NET Framework to 4.5
+
+0.0.0.16- 21 Jul 2015 (beta) - additional fix for target filename found by Dom Edwards
+
+0.0.0.15- 10 Apr 2015 (beta) - additional fix for target filename containing a number causing exception found by Chris Thorp
+                             - slight change to handling IOException when trying to truncate log file that is locked by another process
+						     - add new conf option to allow program to retry opening log file for truncation if it is locked
+
+0.0.0.14- 08 Apr 2015 (beta) - fix for date extenstion not have leading zeroes for month and day found by Alex Faraino
+                             - fix for target filename containing a number causing exception found by Chris Thorp
+							 - fix for rotate directive missing causes exception
+							 - added version number display to logging when verbose mode is set
+
+0.0.0.13- 25 Mar 2015 (beta) - fix for truncating files (submitted by Geert De Peuter)
 
 0.0.0.12- 19 Jan 2015 (beta) - fix for basic config not rotating (submitted by Matt Richardson)
 
