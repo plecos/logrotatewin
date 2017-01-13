@@ -331,7 +331,7 @@ namespace logrotate {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Parsing configuraiton file.
+        ///   Looks up a localized string similar to Parsing configuration file.
         /// </summary>
         internal static string ParseConfigFile {
             get {
