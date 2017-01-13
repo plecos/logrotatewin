@@ -24,7 +24,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
-    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -61,8 +60,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <Content Include="Content\gnu_license.txt" />
     <Content Include="Content\logrotate.conf" />
+    <None Include="Content\gnu_license.rtf" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="strings.es.resx">

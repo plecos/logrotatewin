@@ -106,7 +106,7 @@ namespace logrotate {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Copyright  (C) 2012-2013 Ken Salter.
+        ///   Looks up a localized string similar to Copyright  (C) 2012-2016 Ken Salter.
         /// </summary>
         internal static string CopyRight {
             get {
@@ -331,7 +331,7 @@ namespace logrotate {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Parsing configuraiton file.
+        ///   Looks up a localized string similar to Parsing configuration file.
         /// </summary>
         internal static string ParseConfigFile {
             get {
