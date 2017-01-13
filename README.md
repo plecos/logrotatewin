@@ -2,7 +2,7 @@
 This is a Windows implementation of the logrotate utility found in Linux platforms. The goal is to use the same command line parameters and files as the Linux version.
 
 LogRotate for Windows
-Written by Ken Salter (C) 2012-2015
+Written by Ken Salter (C) 2012-2016
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,4 +25,4 @@ https://sourceforge.net/projects/logrotatewin/
 
 Requirements:
 
-.NET Framework v2.0 or better
+.NET Framework v4.5 or better
