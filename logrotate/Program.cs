@@ -640,10 +640,10 @@ namespace logrotate
                 string time_str = lrc.DateFormat;
                 DateTime now = DateTime.Now;
                 time_str = time_str.Replace("%Y", now.Year.ToString());
-                time_str = time_str.Replace("%M", now.Month.ToString("D2"));
+                time_str = time_str.Replace("%m", now.Month.ToString("D2"));
                 time_str = time_str.Replace("%d", now.Day.ToString("D2"));
                 time_str = time_str.Replace("%H", now.Hour.ToString("D2"));
-                time_str = time_str.Replace("%m", now.Minute.ToString("D2"));
+                time_str = time_str.Replace("%M", now.Minute.ToString("D2"));
                 time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
                 // rotate_name = fi.Name + time_str;
                 rotate_name = Path.GetFileNameWithoutExtension(fi.Name) +
