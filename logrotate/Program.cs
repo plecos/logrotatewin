@@ -645,12 +645,15 @@ namespace logrotate
                 time_str = time_str.Replace("%H", now.Hour.ToString("D2"));
                 time_str = time_str.Replace("%m", now.Minute.ToString("D2"));
                 time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
-                rotate_name = fi.Name + time_str;
+                // rotate_name = fi.Name + time_str;
+                rotate_name = Path.GetFileNameWithoutExtension(fi.Name) +
+                    time_str +
+                    Path.GetExtension(fi.Name);
             }
             else
             {
-                
                 rotate_name = fi.Name + "." + lrc.Start;
+                // rotate_name = Path.GetFileNameWithoutExtension(fi.Name) + "." + lrc.Start;
             }
             return rotate_name;
         }
