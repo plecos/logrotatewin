@@ -653,7 +653,6 @@ namespace logrotate
             else
             {
                 rotate_name = fi.Name + "." + lrc.Start;
-                // rotate_name = Path.GetFileNameWithoutExtension(fi.Name) + "." + lrc.Start;
             }
             return rotate_name;
         }
