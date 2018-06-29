@@ -229,7 +229,7 @@
     <value>Will not rotate since log file is not greater than minimum file size</value>
   </data>
   <data name="ParseConfigFile" xml:space="preserve">
-    <value>Parsing configuraiton file</value>
+    <value>Parsing configuration file</value>
   </data>
   <data name="RotateBasedonFileSize" xml:space="preserve">
     <value>Rotate file based on file size</value>

@@ -1213,27 +1213,20 @@ namespace logrotate
 
         private static MemoryStream GetModifiedFile(string _path)
         {
-            //we expect files-to-rotate to be put in one line, ending on { and separated by spaces
-            //this function takes care of the case when files are separated by newline
-            //to fix that we read original config file into memory, then replace newlines with space 
-            //all further processing will deal with this modified memory stream instead of original file
-            string data = File.ReadAllText(_path);
+            //  This function previously concatenated multiple lines preceding an open 
+            //  brace into a single parameter - If any of these lines were a comment, it 
+            //  would cause the filename and open brace to be ignored resulting in file 
+            //  parsing errors. Even the logrotate.conf file supplied with this project 
+            //  could not be successfully read. This has been corrected by using a Regex 
+            //  to suppress one or more newlines and whitespace preceding an open brace 
+            //  only rather than _all_ preceding new-lines in the file.
+            string Data = File.ReadAllText(_path);
 
-            //get position of {
-            Int32 pos = data.IndexOf("{");
-            string data1 = data.Substring(0, pos).Trim();
-
-            //replace all EOLs before pos with spaces
-            string replaceWith = " ";
-            data1 = data1.Replace("\r\n", replaceWith).Replace("\n", replaceWith).Replace("\r", replaceWith);
-
-            //collapse multiple spaces into one
-            data1 = String.Join(" ", data1.Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries));
-
-            string newdata = data1 + " " + data.Substring(pos);
-
-            byte[] bytes = Encoding.ASCII.GetBytes(newdata);
-            MemoryStream s = new MemoryStream(bytes);
+            Regex Reg = new Regex(@"(\r\n?|\n|\s)+\{");
+            Data = Reg.Replace(Data, " {");
+            
+            byte[] Bytes = Encoding.ASCII.GetBytes(Data);
+            MemoryStream s = new MemoryStream(Bytes);
             return s;
         }
     }
@@ -1307,6 +1300,7 @@ namespace logrotate
                             Logging.Log(Strings.ForceOptionSet,Logging.LogType.Required);
                             break;
                         case "-?":
+                        case "--help":
                         case "--usage":
                             bUsage = true;
                             break;
