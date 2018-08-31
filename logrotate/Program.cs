@@ -11,7 +11,7 @@ using System.Collections;
 
 /*
     LogRotate - rotates, compresses, and mails system logs
-    Copyright (C) 2012  Ken Salter
+    Copyright (C) 2012-2018  Ken Salter
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -224,16 +224,8 @@ namespace logrotate
                 Logging.LogException(e);
                 Environment.Exit(1);
             }
-#if DEBUG
-            finally
-            {
-                // do nothing, this is a place holder for debugging
-                ;
-            }
-#endif
         }
 
-        /*
         private void RecursiveParseFolders(string sfolder, string pattern, ref List<string> dirs)
         {
             foreach (string dir in Directory.GetDirectories(sfolder, pattern))
@@ -241,7 +233,6 @@ namespace logrotate
 
             }
         }
-         */
 
 
         /// <summary>
@@ -255,7 +246,7 @@ namespace logrotate
                 DirectoryInfo di = new DirectoryInfo(GlobalConfig.Include);
                 FileInfo[] m_fis = di.GetFiles();
                 // sort alphabetically
-                Array.Sort(m_fis, delegate(FileSystemInfo a, FileSystemInfo b)
+                Array.Sort(m_fis, delegate (FileSystemInfo a, FileSystemInfo b)
                 {
                     return ((new CaseInsensitiveComparer()).Compare(b.Name, a.Name));
                 });
@@ -670,16 +661,16 @@ namespace logrotate
         private static void AgeOutRotatedFiles(logrotateconf lrc, FileInfo fi, string rotate_path)
         {
             DirectoryInfo di = new DirectoryInfo(rotate_path);
-            FileInfo[] fis = di.GetFiles(fi.Name + ".*");
+            FileInfo[] fis = di.GetFiles(fi.Name + "*");
             if (fis.Length == 0)
                 // nothing to do
                 return;
 
             // look for any rotated log files, and rename them with the count if not using dateext
-            Regex pattern = new Regex(@"^\d+$");
+            Regex pattern = new Regex("[0-9]");
 
             // sort alphabetically reversed
-            Array.Sort<FileSystemInfo>(fis, delegate(FileSystemInfo a, FileSystemInfo b)
+            Array.Sort<FileSystemInfo>(fis, delegate (FileSystemInfo a, FileSystemInfo b)
             {
                 return ((new CaseInsensitiveComparer()).Compare(b.Name, a.Name));
             });
@@ -706,13 +697,10 @@ namespace logrotate
             // iterate through array, determine if file needs to be removed or emailed
             if (lrc.DateExt == true)
             {
-                if (lrc.Rotate > 0)
+                for (int rotation_counter = lrc.Rotate - 1; rotation_counter < fis.Length; rotation_counter++)
                 {
-                    for (int rotation_counter = lrc.Rotate - 1; rotation_counter < fis.Length; rotation_counter++)
-                    {
-                        // remove any entries that are past the rotation limit
-                        RemoveOldRotateFile(fi.FullName, lrc, fis[rotation_counter]);
-                    }
+                    // remove any entries that are past the rotation limit
+                    RemoveOldRotateFile(fi.FullName, lrc, fis[rotation_counter]);
                 }
             }
             else
@@ -722,71 +710,61 @@ namespace logrotate
                 {
                     // if not aged out and we are not using dateext, then rename the file
                     // determine the rotation number of this file.  Account if it is compressed
-                    Logging.Log("Examining filename " + m_fi.Name, Logging.LogType.Verbose);
                     string[] exts = m_fi.Name.Split(new char[] { '.' });
                     // determine which (if any) of the extensions match the regex.  w hen we find one we will use that as our rename reference
                     int i;
                     for (i = exts.Length - 1; i > 0; i--)
                     {
-                        //Logging.Log("Parsing " + exts[i], Logging.LogType.Verbose);
                         if (pattern.IsMatch(exts[i]))
                         {
                             break;
                         }
                     }
-                    int nParse = 0;
-                    if (!Int32.TryParse(exts[i], out nParse))
+                    if (Convert.ToInt32(exts[i]) >= lrc.Rotate)
                     {
-                        Logging.Log("Unable to parse " + exts[i] + " as an int32, skipping...", Logging.LogType.Error);
+                        // too old!
+                        RemoveOldRotateFile(fi.FullName, lrc, m_fi);
                     }
                     else
                     {
-                        if (nParse >= lrc.Rotate)
+                        int newnum = Convert.ToInt32(exts[i]) + 1;
+                        // build new filename
+                        string newFile = "";
+                        for (int j = 0; j < i; j++)
                         {
-                            // too old!
-                            RemoveOldRotateFile(fi.FullName, lrc, m_fi);
+                            newFile = newFile + exts[j];
+                            newFile += ".";
                         }
-                        else
+                        newFile += newnum.ToString();
+                        for (int j = i + 1; j < exts.Length; j++)
                         {
-                            int newnum = nParse + 1;
-                            // build new filename
-                            string newFile = "";
-                            for (int j = 0; j < i; j++)
+                            newFile += ".";
+                            newFile += exts[j];
+                        }
+                        Logging.Log(Strings.Renaming + " " + m_fi.FullName + Strings.To + rotate_path + newFile, Logging.LogType.Verbose);
+                        if (cla.Debug == false)
+                        {
+                            // the there is already a file with the new name, then delete that file so we can rename this one
+                            if (File.Exists(rotate_path + newFile))
                             {
-                                newFile = newFile + exts[j];
-                                newFile += ".";
+                                DeleteRotateFile(rotate_path + newFile, lrc);
                             }
-                            newFile += newnum.ToString();
-                            for (int j = i + 1; j < exts.Length; j++)
+
+                            File.Move(m_fi.FullName, rotate_path + newFile);
+
+                            // if we are set to compress, then check if the new file is compressed.  this is done by looking at the first two bytes
+                            // if they are set to 0x1f8b then it is already compressed.  There is a possibility of a false positive, but this should
+                            // be very unlikely since log files are text files and will not start with these bytes
+
+                            if (lrc.Compress)
                             {
-                                newFile += ".";
-                                newFile += exts[j];
-                            }
-                            Logging.Log(Strings.Renaming + " " + m_fi.FullName + Strings.To + rotate_path + newFile, Logging.LogType.Verbose);
-                            if (cla.Debug == false)
-                            {
-                                // the there is already a file with the new name, then delete that file so we can rename this one
-                                if (File.Exists(rotate_path + newFile))
+                                FileStream fs = File.Open(rotate_path + newFile, FileMode.Open);
+                                byte[] magicnumber = new byte[2];
+                                fs.Read(magicnumber, 0, 2);
+                                fs.Close();
+                                if ((magicnumber[0] != 0x1f) && (magicnumber[1] != 0x8b))
                                 {
-                                    DeleteRotateFile(rotate_path + newFile, lrc);
-                                }
-
-                                File.Move(m_fi.FullName, rotate_path + newFile);
-
-                                // if we are set to compress, then check if the new file is compressed.  this is done by looking at the first two bytes
-                                // if they are set to 0x1f8b then it is already compressed.  There is a possibility of a false positive, but this should
-                                // be very unlikely since log files are text files and will not start with these bytes
-
-                                if (lrc.Compress)
-                                {
-                                    FileStream fs = File.Open(rotate_path + newFile, FileMode.Open);
-                                    byte[] magicnumber = new byte[2];
-                                    fs.Read(magicnumber, 0, 2);
-                                    fs.Close();
-                                    if ((magicnumber[0] != 0x1f) && (magicnumber[1] != 0x8b))
-                                    {
-                                        CompressRotatedFile(rotate_path + newFile, lrc);
-                                    }
+                                    CompressRotatedFile(rotate_path + newFile, lrc);
                                 }
                             }
                         }
@@ -851,116 +829,41 @@ namespace logrotate
 
                     if (cla.Debug == false)
                     {
+                        try
+                        {
                             if (bLogFileExists)
                             {
-                                //FileStream fs = new FileStream(fi.FullName, FileMode.Open);
-                                // fix exception thrown with truncating
-                                FileStream fs = null;
-                                int num_attempts = 1;
-                                while (true)
-                                {
-                                    try
-                                    {
-                                        fs = new FileStream(fi.FullName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        Logging.Log("Error truncating file " + fi.FullName, Logging.LogType.Error);
-                                        if (e.GetType() != typeof(IOException))
-                                        {
-                                            Logging.LogException(e);
-                                        }
-                                        Logging.Log(e.Message, Logging.LogType.Error);
-                                        if (lrc.LogFileOpen_Retry == false)
-                                        {
-                                            Logging.Log("LogFileOpen Retry is false, will not attempt to reopen log file", Logging.LogType.Verbose);
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            if ((num_attempts > lrc.LogFileOpen_NumberRetryAttempts) && (lrc.LogFileOpen_NumberRetryAttempts != 0))
-                                            {
-                                                Logging.Log("Number of attempts to open log file exceeded", Logging.LogType.Verbose);
-                                                break;
-                                            }
-                                            else
-                                            {
-                                                Logging.Log("Will reattempt to open log file after waiting " + lrc.LogFileOpen_MSBetweenRetryAttempts + " ms", Logging.LogType.Verbose);
-                                                num_attempts++;
-                                                System.Threading.Thread.Sleep(lrc.LogFileOpen_MSBetweenRetryAttempts);
-                                                continue;
-                                            }
-                                        }
-                                    }
-                                    finally
-                                    {
-                                        if (fs != null)
-                                        {
-                                            fs.SetLength(0);
-                                            fs.Close();
-                                            Logging.Log("Log file truncated", Logging.LogType.Verbose);
-                                        }
-                                        
-                                    }
-                                    break;
-                                }
-
+                                FileStream fs = new FileStream(fi.FullName, FileMode.Open);
+                                fs.SetLength(0);
+                                fs.Close();
                             }
+                        }
+                        catch (Exception e)
+                        {
+                            Logging.Log("Error truncating file " + fi.FullName, Logging.LogType.Error);
+                            Logging.LogException(e);
+                            return;
+                        }
                     }
                 }
 
             }
             else
             {
+                Logging.Log(Strings.Renaming + " " + fi.FullName + Strings.To + rotate_path + rotate_name, Logging.LogType.Verbose);
+
                 if (cla.Debug == false)
                 {
-                    int num_attempts = 1;
-                    while (true)
+                    try
                     {
-                        try
-                        {
-                            if (bLogFileExists)
-                            {
-                                Logging.Log(Strings.Renaming + " " + fi.FullName + Strings.To + rotate_path + rotate_name, Logging.LogType.Verbose);
-
-                                File.Move(fi.FullName, rotate_path + rotate_name);
-                            }
-                            else
-                            {
-                                Logging.Log(fi.FullName + " " + Strings.CouldNotBeFound + ", " + Strings.Skipping);
-                            }
-                            break;
-                        }
-                        catch (Exception e)
-                        {
-                            Logging.Log("Error renaming file " + fi.FullName + " to " + rotate_path + rotate_name, Logging.LogType.Error);
-                            if (e.GetType() != typeof(IOException))
-                            {
-                                Logging.LogException(e);
-                            }
-                            Logging.Log(e.Message, Logging.LogType.Error);
-                            if (lrc.LogFileOpen_Retry == false)
-                            {
-                                Logging.Log("LogFileOpen Retry is false, will not attempt to rename log file", Logging.LogType.Verbose);
-                                break;
-                            }
-                            else
-                            {
-                                if ((num_attempts > lrc.LogFileOpen_NumberRetryAttempts) && (lrc.LogFileOpen_NumberRetryAttempts != 0))
-                                {
-                                    Logging.Log("Number of attempts to rename log file exceeded", Logging.LogType.Verbose);
-                                    break;
-                                }
-                                else
-                                {
-                                    Logging.Log("Will reattempt to rename log file after waiting " + lrc.LogFileOpen_MSBetweenRetryAttempts + " ms", Logging.LogType.Verbose);
-                                    num_attempts++;
-                                    System.Threading.Thread.Sleep(lrc.LogFileOpen_MSBetweenRetryAttempts);
-                                    continue;
-                                }
-                            }
-
-                        }
+                        if (bLogFileExists)
+                            File.Move(fi.FullName, rotate_path + rotate_name);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log("Error renaming file " + fi.FullName + " to " + rotate_path + rotate_name, Logging.LogType.Error);
+                        Logging.LogException(e);
+                        return;
                     }
                 }
 
@@ -1138,7 +1041,12 @@ namespace logrotate
         {
             Logging.Log(Strings.ParseConfigFile + " " + m_path_to_file, Logging.LogType.Verbose);
 
-            StreamReader sr = new StreamReader(m_path_to_file);
+            //StreamReader sr = new StreamReader(m_path_to_file);
+
+            MemoryStream ms = GetModifiedFile(m_path_to_file);
+
+            StreamReader sr = new StreamReader(ms, System.Text.Encoding.UTF8, true);
+
             bool bSawASection = false;
             // read in lines until done
             while (true)
@@ -1161,9 +1069,19 @@ namespace logrotate
                     continue;
                 }
 
+                // every line until we've met { must be a file to rotate
+                //if (!bSawASection)
+                //{
+                //    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
+
+                //    // create a new config object taking defaults from Global Config
+                //    logrotateconf lrc = new logrotateconf(GlobalConfig);
+
+                //    ProcessConfileFileSection(line, sr, lrc);
+                //}
+
                 // see if there is a { in the line.  If so, this is the beginning of a section 
                 // otherwise it may be a global setting
-
                 if (line.Contains("{"))
                 {
                     bSawASection = true;
@@ -1288,6 +1206,31 @@ namespace logrotate
 
         }
 
+        private static MemoryStream GetModifiedFile(string _path)
+        {
+            //we expect files-to-rotate to be put in one line, ending on { and separated by spaces
+            //this function takes care of the case when files are separated by newline
+            //to fix that we read original config file into memory, then replace newlines with space 
+            //all further processing will deal with this modified memory stream instead of original file
+            string data = File.ReadAllText(_path);
+
+            //get position of {
+            Int32 pos = data.IndexOf("{");
+            string data1 = data.Substring(0, pos).Trim();
+
+            //replace all EOLs before pos with spaces
+            string replaceWith = " ";
+            data1 = data1.Replace("\r\n", replaceWith).Replace("\n", replaceWith).Replace("\r", replaceWith);
+
+            //collapse multiple spaces into one
+            data1 = String.Join(" ", data1.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+
+            string newdata = data1 + " " + data.Substring(pos);
+
+            byte[] bytes = Encoding.ASCII.GetBytes(newdata);
+            MemoryStream s = new MemoryStream(bytes);
+            return s;
+        }
     }
 
     class CmdLineArgs
@@ -1336,7 +1279,6 @@ namespace logrotate
 
         public CmdLineArgs(string[] args)
         {
-            Assembly asm = Assembly.GetExecutingAssembly();
             bool bWatchForState = false;
             // iterate through the args array
             foreach (string a in args)
@@ -1367,8 +1309,6 @@ namespace logrotate
                         case "--verbose":
                             bVerbose = true;
                             Logging.SetVerbose(true);
-                            Logging.Log(Strings.ProgramName + " " + asm.GetName().Version.ToString() + " - " + Strings.CopyRight);
-                            //Logging.Log(Strings.GNURights);
                             Logging.Log(Strings.VerboseOptionSet);
                             break;
                         case "-m":
