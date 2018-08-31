@@ -1,5 +1,5 @@
 LogRotate for Windows
-Written by Ken Salter (C) 2012-2015
+Written by Ken Salter (C) 2012-2018
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ https://sourceforge.net/projects/logrotatewin/
 
 Requirements:
 
-.NET Framework v2.0 or better
+.NET Framework v4.5 or better
 
 Installation:
 
@@ -31,6 +31,10 @@ Run the setup.exe to install.
 This installation will copy the executable, README.txt, gnu_license.txt, and a sample .conf file to the folder you specify.
 
 Release Notes:
+
+0.0.0.18- 31 Aug 2018 (beta) - getting source code up to date
+
+0.0.0.17- 13 Jan 2017 (beta) - merge changes from Github contributors
 
 0.0.0.16- 21 Jul 2015 (beta) - additional fix for target filename found by Dom Edwards
 
