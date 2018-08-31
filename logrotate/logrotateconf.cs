@@ -65,6 +65,9 @@ namespace logrotate
         private bool byearly = false;
         private bool bshred = false;
         private int ishredcycles = 3;
+        private bool bretry_logfileopen = false;
+        private int inumretry_logfileopen = 0;
+        private int inumms_retry_logfileopen = 1000;
         
 
         private bool bpostrotate = false;
@@ -252,6 +255,18 @@ namespace logrotate
         {
             get { return stabooext; }
         }
+        public bool LogFileOpen_Retry
+        {
+            get { return bretry_logfileopen; }
+        }
+        public int LogFileOpen_NumberRetryAttempts
+        {
+            get { return inumretry_logfileopen; }
+        }
+        public int LogFileOpen_MSBetweenRetryAttempts
+        {
+            get { return inumms_retry_logfileopen; }
+        }
         #endregion
 
         /// <summary>
@@ -308,6 +323,9 @@ namespace logrotate
             sinclude = m_source.sinclude;
             stabooext = m_source.stabooext;
             ssmtpfrom = m_source.ssmtpfrom;
+            bretry_logfileopen = m_source.bretry_logfileopen;
+            inumretry_logfileopen = m_source.inumretry_logfileopen;
+            inumms_retry_logfileopen = m_source.inumms_retry_logfileopen;
         }
 
         /// <summary>
@@ -595,6 +613,18 @@ namespace logrotate
                 case "include":
                     sinclude = split[1];
                     PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "logfileopen_retry":
+                    bretry_logfileopen = true;
+                    PrintDebug(split[0], bretry_logfileopen.ToString(), bDebug);
+                    break;
+                case "logfileopen_msbetweenretryattempts":
+                    inumms_retry_logfileopen = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], inumms_retry_logfileopen.ToString(), bDebug);
+                    break;
+                case "logfileopen_numretryattempts":
+                    inumretry_logfileopen = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], inumretry_logfileopen.ToString(), bDebug);
                     break;
                 default:
                     Logging.Log(Strings.UnknownDirective+" " + line,Logging.LogType.Error);

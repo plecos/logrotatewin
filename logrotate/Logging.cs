@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 
@@ -115,11 +116,18 @@ namespace logrotate
         private static void DoLog(string m_text)
         {
             Console.WriteLine(Strings.ProgramName + ": " + m_text);
+#if DEBUG
+            Debug.WriteLine(Strings.ProgramName + ": " + m_text);
+#endif
         }
 
         private static void DoErrorLog(string m_text)
         {
             Console.Error.WriteLine(Strings.ProgramName + ": " + m_text);
+#if DEBUG
+            Debug.WriteLine(Strings.ProgramName + ": " + m_text);
+#endif
+
         }
     }
 }
