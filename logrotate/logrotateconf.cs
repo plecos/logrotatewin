@@ -47,6 +47,7 @@ namespace logrotate
         private string ssmtpfrom = Strings.ProgramName + "@" + Environment.MachineName;
         private string sinclude = "";
         private long iminsize = 0;
+        private long imaxsize = 0;
         private int imaxage = 0;
         private bool bmissingok = false;
         private bool bmonthly = false;
@@ -178,6 +179,11 @@ namespace logrotate
             get { return iminsize; }
         }
 
+        public long MaxSize
+        {
+            get { return imaxsize; }
+        }
+
         public bool Daily
         {
             get { return bdaily; }
@@ -297,6 +303,7 @@ namespace logrotate
             bifempty = m_source.bifempty;
             smail = m_source.smail;
             iminsize = m_source.iminsize;
+            imaxsize = m_source.imaxsize;
             imaxage = m_source.imaxage;
             bmissingok = m_source.bmissingok;
             bmonthly = m_source.bmonthly;
@@ -480,27 +487,18 @@ namespace logrotate
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "minsize":
-                    // the size can be for following:  100, 100k, 100m, 100g
-                    string minsize_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
-                    if (Char.IsNumber(minsize_type, 0))
-                        iminsize = Convert.ToInt64(split[1]);
-                    else
-                    {
-                        if (minsize_type == "K")
-                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
-                        else if (minsize_type == "M")
-                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
-                        else if (minsize_type == "G")
-                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
-                        else
-                        {
-                            Logging.Log(Strings.UnknownSizeType+" " + line,Logging.LogType.Error);
-                            return false;
-                        }
-                    }
-
-                    PrintDebug(split[0], lsize.ToString(), bDebug);
-
+                    iminsize = ParseSize(split[1]);
+                    if (iminsize == 0)
+                        return false;
+                    
+                    PrintDebug(split[0], iminsize.ToString(), bDebug);
+                    break;
+                case "maxsize":
+                    imaxsize = ParseSize(split[1]);
+                    if (imaxsize == 0)
+                        return false;
+                    
+                    PrintDebug(split[0], imaxsize.ToString(), bDebug);
                     break;
                 case "shred":
                     bshred = true;
@@ -537,24 +535,10 @@ namespace logrotate
                 
                 case "size":
                     // the size can be for following:  100, 100k, 100m, 100g
-                    string size_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
-                    if (Char.IsNumber(size_type, 0))
-                        lsize = Convert.ToInt64(split[1]);
-                    else
-                    {
-                        if (size_type == "K")
-                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
-                        else if (size_type == "M")
-                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
-                        else if (size_type == "G")
-                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
-                        else
-                        {
-                            Logging.Log(Strings.UnknownSizeType+" " + line,Logging.LogType.Error);
-                            return false;
-                        }
-                    }
-                    
+                    lsize = ParseSize(split[1]);
+                    if (lsize == 0)
+                        return false;
+
                     PrintDebug(split[0], lsize.ToString(), bDebug);
                     break;
                 case "mailfirst":
@@ -631,6 +615,32 @@ namespace logrotate
                     return false;
             }
             return true;
+        }
+
+        private long ParseSize(string value)
+        {
+            // the size can be for following:  100, 100k, 100m, 100g
+            string size_type = value.Substring(value.Length - 1, 1).ToUpper();
+            if (Char.IsNumber(size_type, 0))
+                return Convert.ToInt64(value);
+
+            long size_base = Convert.ToInt64(value.Substring(0, value.Length - 1));
+            
+            switch (size_type)
+            {
+                case "K":
+                    return size_base * 1024;
+                
+                case "M":
+                    return size_base * 1048576;
+                
+                case "G":
+                    return size_base * 1073741824;
+                
+                default:
+                    Logging.Log(Strings.UnknownSizeType+" " + value, Logging.LogType.Error);
+                    return 0;
+            }
         }
 
         private void ParseFirstAction(string line)
