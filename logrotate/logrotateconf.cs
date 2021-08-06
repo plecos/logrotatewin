@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -24,11 +23,15 @@ namespace logrotate
 {
     class logrotateconf
     {
+        #region Private consts
+        private const string sgzipdefaultcompressext = "gz";
+        #endregion
+
         #region Private variables
-        private bool bcompress = true;
+        private bool bgzipcompress = true;
         //private string scompresscmd = "gzip";
         //private string suncompressedcmd = "gunzip";
-        private string scompressext = "gz";
+        private string scompressext;
         //private string scompressoptions = "-9";
         private bool bcopy = false;
         private bool bcopytruncate = false;
@@ -88,7 +91,7 @@ namespace logrotate
 
         public bool Compress
         {
-            get { return bcompress; }
+            get { return bgzipcompress; }
         }
 
         public string CompressExt
@@ -148,9 +151,12 @@ namespace logrotate
             get { return sdateformat; }
         }
 
-        private void PrintDebug(string line, string value,bool bDebug)
+        private void PrintDebug(string line, string value, bool bDebug)
         {
-            Logging.Log(Strings.Setting+" " + line + Strings.To + value,Logging.LogType.Debug);
+            if (bDebug)
+            {
+                Logging.Log(Strings.Setting + " " + line + Strings.To + value, Logging.LogType.Debug);
+            }
         }
 
         public int Start
@@ -282,7 +288,7 @@ namespace logrotate
         /// <param name="m_source">The source logrotateconf object to copy</param>
         public logrotateconf(logrotateconf m_source)
         {
-            bcompress = m_source.bcompress;
+            bgzipcompress = m_source.bgzipcompress;
             //scompresscmd = m_source.scompresscmd;
             //suncompressedcmd = m_source.suncompressedcmd;
             scompressext = m_source.scompressext;
@@ -364,12 +370,16 @@ namespace logrotate
             switch (split[0])
             {
                 case "compress":
-                    bcompress = true;
-                    PrintDebug(split[0], bcompress.ToString(), bDebug);
+                    bgzipcompress = true;
+                    if (string.IsNullOrEmpty(scompressext))
+                    {
+                        scompressext = sgzipdefaultcompressext;
+                    }
+                    PrintDebug(split[0], bgzipcompress.ToString(), bDebug);
                     break;
                 case "nocompress":
-                    bcompress = false;
-                    PrintDebug(split[0], bcompress.ToString(), bDebug);
+                    bgzipcompress = false;
+                    PrintDebug(split[0], bgzipcompress.ToString(), bDebug);
                     break;
                 case "copy":
                     bcopy = true;
@@ -494,7 +504,7 @@ namespace logrotate
                             iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
                         else
                         {
-                            Logging.Log(Strings.UnknownSizeType+" " + line,Logging.LogType.Error);
+                            Logging.Log(Strings.UnknownSizeType+" " + line, Logging.LogType.Error);
                             return false;
                         }
                     }
@@ -550,7 +560,7 @@ namespace logrotate
                             lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
                         else
                         {
-                            Logging.Log(Strings.UnknownSizeType+" " + line,Logging.LogType.Error);
+                            Logging.Log(Strings.UnknownSizeType + " " + line, Logging.LogType.Error);
                             return false;
                         }
                     }
@@ -627,7 +637,7 @@ namespace logrotate
                     PrintDebug(split[0], inumretry_logfileopen.ToString(), bDebug);
                     break;
                 default:
-                    Logging.Log(Strings.UnknownDirective+" " + line,Logging.LogType.Error);
+                    Logging.Log(Strings.UnknownDirective + " " + line, Logging.LogType.Error);
                     return false;
             }
             return true;

@@ -279,4 +279,10 @@
   <data name="WithWildcardPattern" xml:space="preserve">
     <value>with wildcard pattern</value>
   </data>
+  <data name="NoStatusDate" xml:space="preserve">
+    <value>No date found in status file for path</value>
+  </data>
+  <data name="StateFileLocation" xml:space="preserve">
+    <value>Status file located in</value>
+  </data>
 </root>

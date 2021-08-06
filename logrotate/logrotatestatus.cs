@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 /*
@@ -28,7 +26,7 @@ namespace logrotate
     /// </summary>
     class logrotatestatus
     {
-        private string sfile_path;
+        private readonly string sfile_path;
 
         private DateTime lastmod;
 
@@ -44,7 +42,7 @@ namespace logrotate
             else
             {
                 string[] args = Environment.GetCommandLineArgs();
-                sfile_path = Path.GetDirectoryName(args[0]) + "\\logrotate.status";
+                sfile_path = Path.Combine(Path.GetDirectoryName(args[0]), "logrotate.status");
             }
             // see if the file exists.  if not, create a blank one
             if (File.Exists(sfile_path) == false)
@@ -56,11 +54,13 @@ namespace logrotate
             }
 
             GetStatus_LastModDate();
+            Logging.Log(Strings.StateFileLocation + " " + Path.GetFullPath(sfile_path), Logging.LogType.Verbose);
         }
 
-        private void GetStatus_LastModDate()
+        public DateTime GetStatus_LastModDate()
         {
             lastmod = File.GetLastWriteTime(sfile_path);
+            return lastmod;
         }
 
         public void SetRotationDate(string m_log_path)
@@ -101,14 +101,16 @@ namespace logrotate
             for (int i = 0; i < lines.Length; i++)
             {
                 string[] splitline = lines[i].Split(stringSeparator, StringSplitOptions.None);
-                if (splitline[0] == "\"" + m_log_path)
+                //some runtime versions mess arround with backslash names so better replace them all
+                if (splitline[0].Replace("\\", "/") == "\"" + m_log_path.Replace("\\", "/"))
                 {
                     string[] splitdate = splitline[1].Split(new char[] { '-' });
-                    return new DateTime(Convert.ToInt32(splitdate[0]),Convert.ToInt32(splitdate[1]),Convert.ToInt32(splitdate[2]));
+                    return new DateTime(Convert.ToInt32(splitdate[0]), Convert.ToInt32(splitdate[1]), Convert.ToInt32(splitdate[2]));
                 }
             }
 
             // if we get here, we didn't find it, so we need to force a rotate.  returns back a very old date
+            Logging.Log(Strings.NoStatusDate + " " + m_log_path, Logging.LogType.Verbose);
             return new DateTime(1970, 1, 1);
         }
     }

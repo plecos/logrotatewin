@@ -270,4 +270,10 @@
   <data name="ForceOptionSet" xml:space="preserve">
     <value>Opción "Force" establecida</value>
   </data>
+  <data name="NoStatusDate" xml:space="preserve">
+    <value>No se ha encontrado una fecha en el fichero de estados para el directorio</value>
+  </data>
+  <data name="StateFileLocation" xml:space="preserve">
+    <value>Fichero de estados en el directorio</value>
+  </data>
 </root>

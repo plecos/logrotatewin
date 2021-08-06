@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -39,7 +37,7 @@ namespace logrotate
         /// <summary>
         /// path to the file we want to shred
         /// </summary>
-        private string sfile_path;
+        private readonly string sfile_path;
 
         /// <summary>
         /// Shred a file by writing random data to it
@@ -48,7 +46,9 @@ namespace logrotate
         public ShredFile(string m_path)
         {
             if (File.Exists(m_path) == false)
+            {
                 throw new ArgumentException(m_path + " " + Strings.CouldNotBeFound);
+            }
             sfile_path = m_path;
         }
 
@@ -61,11 +61,10 @@ namespace logrotate
         /// <returns>True if file was shredded, otherwise false</returns>
         public bool ShredIt(int iShredCycles, bool bDebug)
         {
-            Logging.Log(Strings.ShreddingFile+" " + sfile_path + " ShredCycles = " + iShredCycles,Logging.LogType.Debug);
+            Logging.Log(Strings.ShreddingFile + " " + sfile_path + " ShredCycles = " + iShredCycles,Logging.LogType.Debug);
 
             try
             {
-
                 // set attributes in case the file is readonly for some reason
                 File.SetAttributes(sfile_path, FileAttributes.Normal);
 
@@ -74,8 +73,11 @@ namespace logrotate
                 uint BytesPerSector;
                 uint NumberofFreeClusters;
                 uint TotalNumberOfClusters;
+
                 if (!GetDiskFreeSpace(Path.GetPathRoot(sfile_path), out SectorsPerCluster, out BytesPerSector, out NumberofFreeClusters, out TotalNumberOfClusters))
+                {
                     throw new InvalidOperationException("Error calling Win32 API GetDiskFreeSpace Root Path = " + Path.GetPathRoot(sfile_path));
+                }
 
                 //Logging.Log("Number of bytes per sector for " + Path.GetPathRoot(sfile_path) + " is " + BytesPerSector, Logging.LogType.Debug);
 
@@ -129,9 +131,7 @@ namespace logrotate
                 Logging.LogException(e);
                 return false;
             }
-
             return true;
-
         }
     }
 }
