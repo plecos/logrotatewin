@@ -121,7 +121,7 @@
     <value>Copying</value>
   </data>
   <data name="CopyRight" xml:space="preserve">
-    <value>Copyright  (C) 2012-2013 Ken Salter</value>
+    <value>Copyright (C) 2012-2013 Ken Salter</value>
   </data>
   <data name="CouldNotBeFound" xml:space="preserve">
     <value>could not be found</value>
@@ -166,7 +166,7 @@
     <value>-m/--mail option not supported, ignoring</value>
   </data>
   <data name="NoTimestampDirectives" xml:space="preserve">
-    <value>No timestamp directives are set true, skipping timestamp checks</value>
+    <value>No timestamp directives are set true, skipping timestamp check</value>
   </data>
   <data name="ProcessInclude" xml:space="preserve">
     <value>Process include directive file</value>
@@ -190,7 +190,7 @@
     <value> to </value>
   </data>
   <data name="UnknownCmdLineArg" xml:space="preserve">
-    <value>unknown command line argument</value>
+    <value>Unknown command line argument</value>
   </data>
   <data name="UpdateStatus" xml:space="preserve">
     <value>Updating rotation date in status file</value>
@@ -225,7 +225,7 @@
   <data name="LogFileEmpty" xml:space="preserve">
     <value>Log file is empty</value>
   </data>
-  <data name="NoRotateNotGTEMinimumFileSize" xml:space="preserve">
+  <data name="NoRotateNotGTMinimumFileSize" xml:space="preserve">
     <value>Will not rotate since log file is not greater than minimum file size</value>
   </data>
   <data name="ParseConfigFile" xml:space="preserve">
@@ -279,10 +279,34 @@
   <data name="WithWildcardPattern" xml:space="preserve">
     <value>with wildcard pattern</value>
   </data>
+  <data name="AddingFileToRotate" xml:space="preserve">
+    <value>Adding files to rotate</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Key" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="TimestampDirectives" xml:space="preserve">
+    <value>Timestamp directives are set true, doing timestamp checks</value>
+  </data>
+  <data name="NoRotateNotGTTimeStamp" xml:space="preserve">
+    <value>Will not rotate since log file timestamp did not meet check policy or it was already rotated.</value>
+  </data>
   <data name="NoStatusDate" xml:space="preserve">
     <value>No date found in status file for path</value>
   </data>
   <data name="StateFileLocation" xml:space="preserve">
     <value>Status file located in</value>
+  </data>
+  <data name="ProcessingGlobalDirective" xml:space="preserve">
+    <value>Procesing directives included in the global settings</value>
+  </data>
+  <data name="Section" xml:space="preserve">
+    <value>section(s)</value>
+  </data>
+  <data name="ExecutionOutput" xml:space="preserve">
+    <value>Execution output</value>
   </data>
 </root>

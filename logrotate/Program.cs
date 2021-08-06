@@ -5,7 +5,6 @@ using System.Reflection;
 using System.IO;
 using System.Diagnostics;
 using System.Net.Mail;
-using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Collections;
 
@@ -25,7 +24,7 @@ using System.Collections;
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+*/
 
 namespace logrotate
 {
@@ -35,10 +34,10 @@ namespace logrotate
         private static CmdLineArgs cla = null;
 
         // this contains any global config settings
-        private static logrotateconf GlobalConfig = new logrotateconf();
+        private static readonly logrotateconf GlobalConfig = new logrotateconf();
 
         // this is a list of file paths and the associated Config section
-        private static Dictionary<string, logrotateconf> FilePathConfigSection = new Dictionary<string, logrotateconf>();
+        private static readonly Dictionary<string, logrotateconf> FilePathConfigSection = new Dictionary<string, logrotateconf>();
 
         // this object provides management of the Status file
         private static logrotatestatus Status = null;
@@ -73,6 +72,7 @@ namespace logrotate
                 // if there was an include directive in the global settings, then we need to process that 
                 if (GlobalConfig.Include != "")
                 {
+                    Logging.Log(Strings.ProcessingGlobalDirective, Logging.LogType.Verbose);
                     ProcessIncludeDirective();
                 }
 
@@ -85,6 +85,15 @@ namespace logrotate
 
                 // now that config files have been read, let's run the main process
                 // iterate through the sections
+                if (FilePathConfigSection.Count == 0)
+                {
+                    Logging.Log(Strings.NoFoldersFound + " " + Strings.Section, Logging.LogType.Error);
+                    Environment.Exit(-1);
+                }
+                else
+                {
+                    Logging.Log(Strings.Processing + " " + Strings.Section + ": " + FilePathConfigSection.Count.ToString(), Logging.LogType.Debug);
+                }
                 foreach (KeyValuePair<string, logrotateconf> kvp in FilePathConfigSection)
                 {
                     // if sharedscripts enabled, then run prerotate
@@ -100,7 +109,7 @@ namespace logrotate
                     // and we can then run the PostRotate
                     kvp.Value.Decrement_ProcessCount();
 
-                    Logging.Log(Strings.Processing + " " + kvp.Key, Logging.LogType.Verbose);
+                    Logging.Log(Strings.Processing + " " + Strings.Key + " " + kvp.Key, Logging.LogType.Verbose);
                     List<FileInfo> m_rotatefis = new List<FileInfo>();
 
                     try
@@ -109,8 +118,12 @@ namespace logrotate
                         // if kvp.Key is a single file, then process
                         if ((File.Exists(kvp.Key) == true) || ((File.Exists(kvp.Key) == false) && (kvp.Key.Contains("?") == false) && (kvp.Key.Contains("*") == false)))
                         {
+                            Logging.Log(Strings.RotatingFile + " " + kvp.Key, Logging.LogType.Debug);
                             if (CheckForRotate(kvp.Key, kvp.Value))
+                            {
+                                Logging.Log(Strings.AddingFileToRotate + " " + kvp.Key, Logging.LogType.Debug);
                                 m_rotatefis.Add(new FileInfo(kvp.Key));
+                            }
                         }
                         else
                         {
@@ -122,9 +135,11 @@ namespace logrotate
                                 FileInfo[] fis = di.GetFiles();
                                 foreach (FileInfo m_fi in fis)
                                 {
-                                    Logging.Log(Strings.Processing + " " + m_fi.FullName, Logging.LogType.Verbose);
+                                    Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
                                     if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                    {
                                         m_rotatefis.Add(m_fi);
+                                    }
                                 }
                             }
                             else
@@ -164,7 +179,9 @@ namespace logrotate
                                     }
                                 }
                                 if (bFoundWildcard == false)
+                                {
                                     dirs.Add(tmp);
+                                }
 
                                 foreach (string search_dir in dirs)
                                 {
@@ -178,9 +195,11 @@ namespace logrotate
                                     }
                                     foreach (FileInfo m_fi in fis)
                                     {
-                                        Logging.Log(Strings.Processing + " " + m_fi.FullName, Logging.LogType.Verbose);
+                                        Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
                                         if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                        {
                                             m_rotatefis.Add(m_fi);
+                                        }
                                     }
                                 }
                             }
@@ -215,9 +234,6 @@ namespace logrotate
                     Logging.Log(Strings.ExecutingLastAction, Logging.LogType.Verbose);
                     ProcessLastAction(GlobalConfig);
                 }
-
-
-
             }
             catch (Exception e)
             {
@@ -353,8 +369,7 @@ namespace logrotate
             {
                 if (fi.Length < lrc.MinSize)
                 {
-                    Logging.Log(Strings.NoRotateNotGTEMinimumFileSize, Logging.LogType.Verbose);
-
+                    Logging.Log(Strings.NoRotateNotGTMinimumFileSize + " " + Strings.Skipping + " " + fi.Length.ToString(), Logging.LogType.Verbose);
                     return false;
                 }
             }
@@ -364,9 +379,7 @@ namespace logrotate
                 if (fi.Length >= lrc.Size)
                 {
                     Logging.Log(Strings.RotateBasedonFileSize, Logging.LogType.Verbose);
-
                     bDoRotate = true;
-
                 }
             }
             else
@@ -380,6 +393,7 @@ namespace logrotate
                 }
                 else
                 {
+                    Logging.Log(Strings.TimestampDirectives, Logging.LogType.Verbose);
                     // check last date of rotation
                     DateTime lastRotate = Status.GetRotationDate(logfilepath);
                     TimeSpan ts = DateTime.Now - lastRotate;
@@ -419,12 +433,13 @@ namespace logrotate
                             bDoRotate = true;
                         }
                     }
-
+                    if (!bDoRotate)
+                    {
+                        Logging.Log(Strings.NoRotateNotGTTimeStamp, Logging.LogType.Verbose);
+                    }
                 }
             }
-
             return bDoRotate;
-
         }
 
         private static void RemoveOldRotateFile(string logfilepath, logrotateconf lrc, FileInfo m_fi)
@@ -447,7 +462,9 @@ namespace logrotate
         private static void DeleteRotateFile(string m_filepath, logrotateconf lrc)
         {
             if (File.Exists(m_filepath) == false)
+            {
                 return;
+            }
 
             if (lrc.Shred)
             {
@@ -518,11 +535,11 @@ namespace logrotate
                     p.WaitForExit();
                     if (output != "")
                     {
-                        Logging.Log(output, Logging.LogType.Verbose);
+                        Logging.Log(Strings.ExecutionOutput + " - " + output, Logging.LogType.Verbose);
                     }
                     if (error != "")
                     {
-                        Logging.Log(error, Logging.LogType.Error);
+                        Logging.Log(Strings.ExecutionOutput + " - " + error, Logging.LogType.Error);
                         return false;
                     }
                 }
@@ -594,10 +611,10 @@ namespace logrotate
         private static bool PostRotate(logrotateconf lrc, string path_to_logfile)
         {
             if (lrc.PostRotate == null)
+            {
                 throw new ArgumentNullException("lrc.PostRotate");
-
+            }
             return CreateScriptandExecute(lrc.PostRotate, path_to_logfile);
-
         }
         #endregion
 
@@ -610,7 +627,7 @@ namespace logrotate
         private static string GetRotatePath(logrotateconf lrc, FileInfo fi)
         {
             // determine path to put the rotated log file
-            string rotate_path = "";
+            string rotate_path;
             if (lrc.OldDir != "")
             {
                 if (!Directory.Exists(lrc.OldDir))
@@ -621,8 +638,9 @@ namespace logrotate
                 rotate_path = lrc.OldDir + "\\";
             }
             else
+            {
                 rotate_path = Path.GetDirectoryName(fi.FullName) + "\\";
-
+            }
             return rotate_path;
         }
 
@@ -634,19 +652,20 @@ namespace logrotate
         /// <returns>String containing rotated log file name</returns>
         private static string GetRotateName(logrotateconf lrc, FileInfo fi)
         {
-            string rotate_name = "";
+            string rotate_name;
             if (lrc.DateExt)
             {
                 string time_str = lrc.DateFormat;
                 time_str = time_str.Replace("%Y", DateTime.Now.Year.ToString());
                 time_str = time_str.Replace("%m", DateTime.Now.Month.ToString("D2"));
                 time_str = time_str.Replace("%d", DateTime.Now.Day.ToString("D2"));
+                time_str = time_str.Replace("%H", DateTime.Now.Hour.ToString("D2"));
+                time_str = time_str.Replace("%M", DateTime.Now.Minute.ToString("D2"));
                 time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
                 rotate_name = fi.Name + time_str;
             }
             else
             {
-
                 rotate_name = fi.Name + "." + lrc.Start;
             }
             return rotate_name;
@@ -663,16 +682,17 @@ namespace logrotate
             DirectoryInfo di = new DirectoryInfo(rotate_path);
             FileInfo[] fis = di.GetFiles(fi.Name + "*");
             if (fis.Length == 0)
+            {
                 // nothing to do
                 return;
-
+            }
             // look for any rotated log files, and rename them with the count if not using dateext
             Regex pattern = new Regex("[0-9]");
 
             // sort alphabetically reversed
             Array.Sort<FileSystemInfo>(fis, delegate (FileSystemInfo a, FileSystemInfo b)
             {
-                return ((new CaseInsensitiveComparer()).Compare(b.Name, a.Name));
+                return new CaseInsensitiveComparer().Compare(b.Name, a.Name);
             });
             // if original file is in this list, remove it
             if (fis[fis.Length - 1].Name == fi.Name)
@@ -705,7 +725,6 @@ namespace logrotate
             }
             else
             {
-
                 foreach (FileInfo m_fi in fis)
                 {
                     // if not aged out and we are not using dateext, then rename the file
@@ -732,7 +751,7 @@ namespace logrotate
                         string newFile = "";
                         for (int j = 0; j < i; j++)
                         {
-                            newFile = newFile + exts[j];
+                            newFile += exts[j];
                             newFile += ".";
                         }
                         newFile += newnum.ToString();
@@ -1045,7 +1064,7 @@ namespace logrotate
 
             MemoryStream ms = GetModifiedFile(m_path_to_file);
 
-            StreamReader sr = new StreamReader(ms, System.Text.Encoding.UTF8, true);
+            StreamReader sr = new StreamReader(ms, Encoding.UTF8, true);
 
             bool bSawASection = false;
             // read in lines until done
@@ -1053,14 +1072,18 @@ namespace logrotate
             {
                 string line = sr.ReadLine();
                 if (line == null)
+                {
                     break;
+                }
 
                 line = line.Trim();
                 Logging.Log(Strings.ReadLine + " " + line, Logging.LogType.Debug);
 
                 // skip blank lines
-                if (line == "")
+                if (string.IsNullOrEmpty(line))
+                {
                     continue;
+                }
 
                 // if line begins with #, then it is a comment and can be ignored
                 if (line[0] == '#')
@@ -1101,12 +1124,7 @@ namespace logrotate
                         Logging.Log(Strings.GlobalOptionsAboveSections, Logging.LogType.Error);
                     }
                 }
-
             }
-
-
-
-
         }
 
         private static void ProcessConfileFileSection(string starting_line, StreamReader sr, logrotateconf lrc)
@@ -1174,7 +1192,6 @@ namespace logrotate
             }
              */
 
-
             // read until we hit a } and process
             while (true)
             {
@@ -1235,41 +1252,41 @@ namespace logrotate
 
     class CmdLineArgs
     {
-        private bool bForce = false;
+        private readonly bool bForce = false;
 
         public bool Force
         {
             get { return bForce; }
         }
 
-        private bool bVerbose = false;
+        private readonly bool bVerbose = false;
 
         public bool Verbose
         {
             get { return bVerbose; }
         }
 
-        private bool bUsage = false;
+        private readonly bool bUsage = false;
 
         public bool Usage
         {
             get { return bUsage; }
         }
 
-        private bool bDebug = false;
+        private readonly bool bDebug = false;
 
         public bool Debug
         {
             get { return bDebug; }
         }
 
-        private string sAlternateStateFile = "";
+        private readonly string sAlternateStateFile = "";
         public string AlternateStateFile
         {
             get { return sAlternateStateFile; }
         }
 
-        private List<string> sConfigFilePaths = new List<string>();
+        private readonly List<string> sConfigFilePaths = new List<string>();
 
         public List<string> ConfigFilePaths
         {
@@ -1343,6 +1360,5 @@ namespace logrotate
                 }
             }
         }
-
     }
 }

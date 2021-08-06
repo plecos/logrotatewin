@@ -121,7 +121,7 @@
     <value>Copiando</value>
   </data>
   <data name="CopyRight" xml:space="preserve">
-    <value>Copyright  (C) 2012-2013 Ken Salter</value>
+    <value>Copyright (C) 2012-2013 Ken Salter</value>
   </data>
   <data name="CouldNotBeFound" xml:space="preserve">
     <value>No se pudo encontrar</value>
@@ -153,6 +153,9 @@
   <data name="ForceOptionRotate" xml:space="preserve">
     <value>Opción "Force" habilitada, rotando el archivo</value>
   </data>
+  <data name="ForceOptionSet" xml:space="preserve">
+    <value>Opción Forzar el valor true</value>
+  </data>
   <data name="GlobalOptionsAboveSections" xml:space="preserve">
     <value>Las opciones generales deben declararse antes que las secciones, en caso contrario serán ignoradas</value>
   </data>
@@ -170,6 +173,9 @@
   </data>
   <data name="Processing" xml:space="preserve">
     <value>Procesado</value>
+  </data>
+  <data name="ProgramName" xml:space="preserve">
+    <value>logrotate</value>
   </data>
   <data name="Renaming" xml:space="preserve">
     <value>Renombrando</value>
@@ -192,6 +198,12 @@
   <data name="Usage1" xml:space="preserve">
     <value>Uso: logrotate [-d|--debug] [-f|--force]</value>
   </data>
+  <data name="Usage2" xml:space="preserve">
+    <value>[-s|--state=statefile] [-v|--verbose] [-?|--help] [--usage]</value>
+  </data>
+  <data name="Usage3" xml:space="preserve">
+    <value>&lt;configfile&gt;</value>
+  </data>
   <data name="VerboseOptionSet" xml:space="preserve">
     <value>Opción "Verbose" habilitada</value>
   </data>
@@ -213,7 +225,7 @@
   <data name="LogFileEmpty" xml:space="preserve">
     <value>El archivo de log está vacío</value>
   </data>
-  <data name="NoRotateNotGTEMinimumFileSize" xml:space="preserve">
+  <data name="NoRotateNotGTMinimumFileSize" xml:space="preserve">
     <value>El tamaño del archivo de log es menor que el mínimo configurado. El archivo no será procesado.</value>
   </data>
   <data name="ParseConfigFile" xml:space="preserve">
@@ -267,13 +279,34 @@
   <data name="WithWildcardPattern" xml:space="preserve">
     <value>con el patrón</value>
   </data>
-  <data name="ForceOptionSet" xml:space="preserve">
-    <value>Opción "Force" establecida</value>
+  <data name="AddingFileToRotate" xml:space="preserve">
+    <value>Añadiendo ficheros a la rotación</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>Fichero</value>
+  </data>
+  <data name="Key" xml:space="preserve">
+    <value>Clave</value>
+  </data>
+  <data name="TimestampDirectives" xml:space="preserve">
+    <value>Directiva de hora configurada, aplicando controles de fecha y hora</value>
+  </data>
+  <data name="NoRotateNotGTTimeStamp" xml:space="preserve">
+    <value>El archivo no se rotará ya que o bien no está dentro del control fecha configurado o bien que ese fichero ha sido ya rotado, usa la opcion Forzar en caso necesario.</value>
   </data>
   <data name="NoStatusDate" xml:space="preserve">
     <value>No se ha encontrado una fecha en el fichero de estados para el directorio</value>
   </data>
   <data name="StateFileLocation" xml:space="preserve">
     <value>Fichero de estados en el directorio</value>
+  </data>
+  <data name="ProcessingGlobalDirective" xml:space="preserve">
+    <value>Procesando directivas incluidas en la configuración general</value>
+  </data>
+  <data name="Section" xml:space="preserve">
+    <value>sección/secciones</value>
+  </data>
+  <data name="ExecutionOutput" xml:space="preserve">
+    <value>Resultado de la ejecución</value>
   </data>
 </root>
