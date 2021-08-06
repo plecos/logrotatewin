@@ -118,127 +118,124 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Copying" xml:space="preserve">
-    <value>Copiado</value>
+    <value>Copiando</value>
   </data>
   <data name="CopyRight" xml:space="preserve">
-    <value>Derechos de autor 2012-2013 Ken Salter</value>
+    <value>Copyright  (C) 2012-2013 Ken Salter</value>
   </data>
   <data name="CouldNotBeFound" xml:space="preserve">
     <value>No se pudo encontrar</value>
   </data>
   <data name="DebugOptionSet" xml:space="preserve">
-    <value>Opción de depuración se establece en true</value>
+    <value>Modo de depuración activo</value>
   </data>
   <data name="DeletingFile" xml:space="preserve">
-    <value>Eliminación de archivos</value>
+    <value>Borrando el archivo</value>
   </data>
   <data name="Executing" xml:space="preserve">
-    <value>Ejecución</value>
+    <value>Ejecutando</value>
   </data>
   <data name="ExecutingFirstAction" xml:space="preserve">
-    <value>Ejecución de comandos FirstAction</value>
+    <value>Ejecutando los comandos de la configuración "FirstAction"</value>
   </data>
   <data name="ExecutingLastAction" xml:space="preserve">
-    <value>Ejecución de comandos LastAction</value>
+    <value>Ejecutando los comandos de la configuración "LastAction"</value>
   </data>
   <data name="ExecutingPostRotateSharedScripts" xml:space="preserve">
-    <value>Ejecución de comandos PostRotate (SharedScripts)</value>
+    <value>Ejecutando los comandos de la configuración "PostRotate" del grupo "SharedScripts"</value>
   </data>
   <data name="ExecutingPreRotateSharedScripts" xml:space="preserve">
-    <value>Ejecución de comandos PreRotate (SharedScripts)</value>
+    <value>Ejecutando los comandos de la configuración "PreRotate" del grupo "SharedScripts"</value>
   </data>
   <data name="ExtInTaboo" xml:space="preserve">
-    <value>Extensión está en la lista tabú</value>
+    <value>La extensión de archivo está en la lista de palabras no permitidas</value>
   </data>
   <data name="ForceOptionRotate" xml:space="preserve">
-    <value>Fuerza opción está activada, girará</value>
-  </data>
-  <data name="ForceOptionSet" xml:space="preserve">
-    <value>Opción Forzar el valor true</value>
+    <value>Opción "Force" habilitada, rotando el archivo</value>
   </data>
   <data name="GlobalOptionsAboveSections" xml:space="preserve">
-    <value>Opciones globales deben ir por encima de las secciones, haciendo caso omiso</value>
+    <value>Las opciones generales deben declararse antes que las secciones, en caso contrario serán ignoradas</value>
   </data>
   <data name="GNURights" xml:space="preserve">
-    <value>Esto puede ser distribuido libremente bajo los términos de la Licencia Pública GNU.</value>
+    <value>Este software puede ser distribuido libremente bajo los términos de Licencia Pública GNU.</value>
   </data>
   <data name="MailOptionSet" xml:space="preserve">
-    <value>-m/--mail opción no compatible, haciendo caso omiso de</value>
+    <value>Las opciones "-m" o "--mail" no son compatibles para esta versión, ignorando estas opciones</value>
   </data>
   <data name="NoTimestampDirectives" xml:space="preserve">
-    <value>No hay indicación de la hora se establecen directrices verdad, saltándose los controles de fecha y hora</value>
+    <value>Directiva de fecha y hora no habilitada, ignorando su comprobación.</value>
   </data>
   <data name="ProcessInclude" xml:space="preserve">
-    <value>Proceso de archivo de inclusión directiva</value>
+    <value>Procesando directiva del archivo</value>
   </data>
   <data name="Processing" xml:space="preserve">
-    <value>Transformación</value>
+    <value>Procesado</value>
   </data>
   <data name="Renaming" xml:space="preserve">
-    <value>Cambio de nombre</value>
+    <value>Renombrando</value>
   </data>
   <data name="ShreddingFile" xml:space="preserve">
-    <value>Trituración de archivos</value>
+    <value>Eliminando por completo el archivo</value>
   </data>
   <data name="Skipping" xml:space="preserve">
-    <value>Saltarse</value>
+    <value>Saltando</value>
   </data>
   <data name="To" xml:space="preserve">
     <value> a</value>
   </data>
   <data name="UnknownCmdLineArg" xml:space="preserve">
-    <value>comando desconocido argumento de la línea</value>
+    <value>Argumento desconiocido en la línea de comando</value>
   </data>
   <data name="UpdateStatus" xml:space="preserve">
-    <value>Actualización de fecha rotación en el archivo de estado</value>
+    <value>Actualizando la fecha de la última rotación en el fichero de estados</value>
   </data>
   <data name="Usage1" xml:space="preserve">
     <value>Uso: logrotate [-d|--debug] [-f|--force]</value>
   </data>
   <data name="VerboseOptionSet" xml:space="preserve">
-    <value>Opción Verbose establece en true</value>
+    <value>Opción "Verbose" habilitada</value>
   </data>
   <data name="AddingConfigFile" xml:space="preserve">
-    <value>Agregando a los archivos de configuración para procesar</value>
+    <value>Añádiendo archivos de configuración para procesar</value>
   </data>
   <data name="AlternateStateFile" xml:space="preserve">
-    <value>Configuración de archivo de estado alternativo para</value>
+    <value>Configuración alternativa para el fichero de estados</value>
   </data>
   <data name="Comment" xml:space="preserve">
     <value>comentario</value>
   </data>
   <data name="Compressing" xml:space="preserve">
-    <value>La compresión de archivos de registro rotado</value>
+    <value>Comprimiendo el archivo rotado</value>
   </data>
   <data name="CreateNewEmptyLogFile" xml:space="preserve">
-    <value>Crear nuevo archivo de registro</value>
+    <value>Crear nuevo archivo de log</value>
   </data>
   <data name="LogFileEmpty" xml:space="preserve">
-    <value>El archivo de registro está vacío</value>
+    <value>El archivo de log está vacío</value>
   </data>
   <data name="NoRotateNotGTEMinimumFileSize" xml:space="preserve">
-    <value>No girar desde el archivo de registro no es mayor que el tamaño de archivo mínimo</value>
+    <value>El tamaño del archivo de log es menor que el mínimo configurado. El archivo no será procesado.</value>
   </data>
   <data name="ParseConfigFile" xml:space="preserve">
-    <value>Analizar el archivo de configuración</value>
+    <value>Analizando de archivo de configuración</value>
   </data>
   <data name="RotateBasedonFileSize" xml:space="preserve">
-    <value>Gire archivo basándose en el tamaño del archivo</value>
+    <value>Rotación dependiendo del tamaño del archivo</value>
   </data>
   <data name="RotateSimulated" xml:space="preserve">
-    <value>Gire se simulará porque depuración es cierto</value>
+    <value>Rotación simulada (modo de depuración activo)</value>
   </data>
   <data name="RotatingFile" xml:space="preserve">
-    <value>Rotación de archivo</value>
+    <value>Rotando el archivo</value>
   </data>
   <data name="Setting" xml:space="preserve">
-    <value>Ajuste</value>
+    <value>Configuración</value>
   </data>
   <data name="TruncateLogFile" xml:space="preserve">
-    <value>Truncar el archivo de registro original</value>
+    <value>Truncando el archivo de log original</value>
   </data>
   <data name="UnknownDirective" xml:space="preserve">
-    <value>Directiva Desconocido</value>
+    <value>Directiva desconocida</value>
   </data>
   <data name="UnknownSizeType" xml:space="preserve">
     <value>Tipo de tamaño desconocido</value>
@@ -247,27 +244,30 @@
     <value>nueva sección</value>
   </data>
   <data name="ReadLine" xml:space="preserve">
-    <value>leer línea</value>
+    <value>Leyendo la línea</value>
   </data>
   <data name="SendingEmailTo" xml:space="preserve">
-    <value>Envío de correo electrónico a</value>
+    <value>Enviando correo electrónico a</value>
   </data>
   <data name="LookingForFolders" xml:space="preserve">
-    <value>Buscando las carpetas que se encuentran en</value>
+    <value>Buscando carpetas en</value>
   </data>
   <data name="MatchedFolder" xml:space="preserve">
-    <value>carpeta Igualados</value>
+    <value>Carpeta encontrada</value>
   </data>
   <data name="Matching" xml:space="preserve">
-    <value>el mismo que</value>
+    <value>que coincida con</value>
   </data>
   <data name="NoFilesFound" xml:space="preserve">
-    <value>No se han encontrado en los archivos</value>
+    <value>Archivos no encontrados en</value>
   </data>
   <data name="NoFoldersFound" xml:space="preserve">
-    <value>No se han encontrado en las carpetas</value>
+    <value>Carpetas no encontradas en</value>
   </data>
   <data name="WithWildcardPattern" xml:space="preserve">
-    <value>con el patrón de comodines</value>
+    <value>con el patrón</value>
+  </data>
+  <data name="ForceOptionSet" xml:space="preserve">
+    <value>Opción "Force" establecida</value>
   </data>
 </root>
