@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 
 /*
@@ -87,7 +85,7 @@ namespace logrotate
         /// </summary>
         /// <param name="m_text">Text to Log</param>
         /// <param name="m_type">Type of Log (Error,Required,Debug,Verbose)</param>
-        public static void Log(string m_text, Logging.LogType m_type)
+        public static void Log(string m_text, LogType m_type)
         {
             switch (m_type)
             {
@@ -100,17 +98,16 @@ namespace logrotate
                 case LogType.Debug:
                     if (bDebug)
                     {
-                        DoLog(m_text);
+                        DoDebugLog(m_text);
                     }
                     return;
                 case LogType.Verbose:
                     if (bVerbose)
                     {
-                        DoLog(m_text);
+                        DoVerboseLog(m_text);
                     }
                     return;
             }
-
         }
 
         private static void DoLog(string m_text)
@@ -121,13 +118,37 @@ namespace logrotate
 #endif
         }
 
+        private static void DoVerboseLog(string m_text)
+        {
+            ConsoleColor bCurrentColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine(Strings.ProgramName + " [VRB]: " + m_text);
+            Console.ForegroundColor = bCurrentColor;
+#if DEBUG
+            Debug.WriteLine(Strings.ProgramName + " [VRB]: " + m_text);
+#endif
+        }
+
+        private static void DoDebugLog(string m_text)
+        {
+            ConsoleColor bCurrentColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine(Strings.ProgramName + " [DBG]: " + m_text);
+            Console.ForegroundColor = bCurrentColor;
+#if DEBUG
+            Debug.WriteLine(Strings.ProgramName + " [DBG]: " + m_text);
+#endif
+        }
+
         private static void DoErrorLog(string m_text)
         {
-            Console.Error.WriteLine(Strings.ProgramName + ": " + m_text);
+            ConsoleColor bCurrentColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.Error.WriteLine(Strings.ProgramName + " [ERR]: " + m_text);
+            Console.ForegroundColor = bCurrentColor;
 #if DEBUG
-            Debug.WriteLine(Strings.ProgramName + ": " + m_text);
+            Debug.WriteLine(Strings.ProgramName + " [ERR]: " + m_text);
 #endif
-
         }
     }
 }

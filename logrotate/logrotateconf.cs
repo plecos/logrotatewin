@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -24,11 +23,15 @@ namespace logrotate
 {
     class logrotateconf
     {
+        #region Private consts
+        private const string sgzipdefaultcompressext = "gz";
+        #endregion
+
         #region Private variables
-        private bool bcompress = true;
+        private bool bgzipcompress = true;
         //private string scompresscmd = "gzip";
         //private string suncompressedcmd = "gunzip";
-        private string scompressext = "gz";
+        private string scompressext;
         //private string scompressoptions = "-9";
         private bool bcopy = false;
         private bool bcopytruncate = false;
@@ -89,7 +92,7 @@ namespace logrotate
 
         public bool Compress
         {
-            get { return bcompress; }
+            get { return bgzipcompress; }
         }
 
         public string CompressExt
@@ -149,9 +152,12 @@ namespace logrotate
             get { return sdateformat; }
         }
 
-        private void PrintDebug(string line, string value,bool bDebug)
+        private void PrintDebug(string line, string value, bool bDebug)
         {
-            Logging.Log(Strings.Setting+" " + line + Strings.To + value,Logging.LogType.Debug);
+            if (bDebug)
+            {
+                Logging.Log(Strings.Setting + " " + line + Strings.To + value, Logging.LogType.Debug);
+            }
         }
 
         public int Start
@@ -288,7 +294,7 @@ namespace logrotate
         /// <param name="m_source">The source logrotateconf object to copy</param>
         public logrotateconf(logrotateconf m_source)
         {
-            bcompress = m_source.bcompress;
+            bgzipcompress = m_source.bgzipcompress;
             //scompresscmd = m_source.scompresscmd;
             //suncompressedcmd = m_source.suncompressedcmd;
             scompressext = m_source.scompressext;
@@ -371,12 +377,16 @@ namespace logrotate
             switch (split[0])
             {
                 case "compress":
-                    bcompress = true;
-                    PrintDebug(split[0], bcompress.ToString(), bDebug);
+                    bgzipcompress = true;
+                    if (string.IsNullOrEmpty(scompressext))
+                    {
+                        scompressext = sgzipdefaultcompressext;
+                    }
+                    PrintDebug(split[0], bgzipcompress.ToString(), bDebug);
                     break;
                 case "nocompress":
-                    bcompress = false;
-                    PrintDebug(split[0], bcompress.ToString(), bDebug);
+                    bgzipcompress = false;
+                    PrintDebug(split[0], bgzipcompress.ToString(), bDebug);
                     break;
                 case "copy":
                     bcopy = true;
@@ -487,18 +497,26 @@ namespace logrotate
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "minsize":
-                    iminsize = ParseSize(split[1]);
-                    if (iminsize == 0)
-                        return false;
-                    
-                    PrintDebug(split[0], iminsize.ToString(), bDebug);
-                    break;
-                case "maxsize":
-                    imaxsize = ParseSize(split[1]);
-                    if (imaxsize == 0)
-                        return false;
-                    
-                    PrintDebug(split[0], imaxsize.ToString(), bDebug);
+                    // the size can be for following:  100, 100k, 100m, 100g
+                    string minsize_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
+                    if (Char.IsNumber(minsize_type, 0))
+                        iminsize = Convert.ToInt64(split[1]);
+                    else
+                    {
+                        if (minsize_type == "K")
+                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
+                        else if (minsize_type == "M")
+                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
+                        else if (minsize_type == "G")
+                            iminsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
+                        else
+                        {
+                            Logging.Log(Strings.UnknownSizeType+" " + line, Logging.LogType.Error);
+                            return false;
+                        }
+                    }
+
+                    PrintDebug(split[0], lsize.ToString(), bDebug);
                     break;
                 case "shred":
                     bshred = true;
@@ -535,10 +553,23 @@ namespace logrotate
                 
                 case "size":
                     // the size can be for following:  100, 100k, 100m, 100g
-                    lsize = ParseSize(split[1]);
-                    if (lsize == 0)
-                        return false;
-
+                    string size_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
+                    if (Char.IsNumber(size_type, 0))
+                        lsize = Convert.ToInt64(split[1]);
+                    else
+                    {
+                        if (size_type == "K")
+                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
+                        else if (size_type == "M")
+                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
+                        else if (size_type == "G")
+                            lsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
+                        else
+                        {
+                            Logging.Log(Strings.UnknownSizeType + " " + line, Logging.LogType.Error);
+                            return false;
+                        }
+                    }
                     PrintDebug(split[0], lsize.ToString(), bDebug);
                     break;
                 case "mailfirst":
@@ -611,7 +642,7 @@ namespace logrotate
                     PrintDebug(split[0], inumretry_logfileopen.ToString(), bDebug);
                     break;
                 default:
-                    Logging.Log(Strings.UnknownDirective+" " + line,Logging.LogType.Error);
+                    Logging.Log(Strings.UnknownDirective + " " + line, Logging.LogType.Error);
                     return false;
             }
             return true;
