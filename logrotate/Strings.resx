@@ -228,6 +228,9 @@
   <data name="NoRotateNotGTMinimumFileSize" xml:space="preserve">
     <value>Will not rotate since log file is not greater than minimum file size</value>
   </data>
+  <data name="RotateWhenMaximumFileSize" xml:space="preserve">
+    <value>Will rotate since log file is greater than maximum file size</value>
+  </data>
   <data name="ParseConfigFile" xml:space="preserve">
     <value>Parsing configuration file</value>
   </data>

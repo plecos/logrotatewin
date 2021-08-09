@@ -374,6 +374,16 @@ namespace logrotate
                 }
             }
 
+            if (lrc.MaxSize != 0)
+            {
+                if (fi.Length >= lrc.MaxSize)
+                {
+                    Logging.Log(Strings.RotateWhenMaximumFileSize, Logging.LogType.Verbose);
+                    
+                    return true;
+                }
+            }
+
             if (lrc.Size != 0)
             {
                 if (fi.Length >= lrc.Size)

@@ -50,6 +50,7 @@ namespace logrotate
         private string ssmtpfrom = Strings.ProgramName + "@" + Environment.MachineName;
         private string sinclude = "";
         private long iminsize = 0;
+        private long imaxsize = 0;
         private int imaxage = 0;
         private bool bmissingok = false;
         private bool bmonthly = false;
@@ -184,6 +185,11 @@ namespace logrotate
             get { return iminsize; }
         }
 
+        public long MaxSize
+        {
+            get { return imaxsize; }
+        }
+
         public bool Daily
         {
             get { return bdaily; }
@@ -303,6 +309,7 @@ namespace logrotate
             bifempty = m_source.bifempty;
             smail = m_source.smail;
             iminsize = m_source.iminsize;
+            imaxsize = m_source.imaxsize;
             imaxage = m_source.imaxage;
             bmissingok = m_source.bmissingok;
             bmonthly = m_source.bmonthly;
@@ -510,7 +517,6 @@ namespace logrotate
                     }
 
                     PrintDebug(split[0], lsize.ToString(), bDebug);
-
                     break;
                 case "shred":
                     bshred = true;
@@ -564,7 +570,6 @@ namespace logrotate
                             return false;
                         }
                     }
-                    
                     PrintDebug(split[0], lsize.ToString(), bDebug);
                     break;
                 case "mailfirst":
@@ -641,6 +646,32 @@ namespace logrotate
                     return false;
             }
             return true;
+        }
+
+        private long ParseSize(string value)
+        {
+            // the size can be for following:  100, 100k, 100m, 100g
+            string size_type = value.Substring(value.Length - 1, 1).ToUpper();
+            if (Char.IsNumber(size_type, 0))
+                return Convert.ToInt64(value);
+
+            long size_base = Convert.ToInt64(value.Substring(0, value.Length - 1));
+            
+            switch (size_type)
+            {
+                case "K":
+                    return size_base * 1024;
+                
+                case "M":
+                    return size_base * 1048576;
+                
+                case "G":
+                    return size_base * 1073741824;
+                
+                default:
+                    Logging.Log(Strings.UnknownSizeType+" " + value, Logging.LogType.Error);
+                    return 0;
+            }
         }
 
         private void ParseFirstAction(string line)
