@@ -487,7 +487,7 @@ namespace logrotate
                 if (cla.Debug == false)
                 {
                     ShredFile sf = new ShredFile(m_filepath);
-                    sf.ShredIt(lrc.ShredCycles, cla.Debug);
+                    return sf.ShredIt(lrc.ShredCycles, cla.Debug);
                 }
             }
             else

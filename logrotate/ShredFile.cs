@@ -59,7 +59,7 @@ namespace logrotate
         /// <param name="bDebug">flag indicating if this is in debug mode (file will not be shredded if in debug mode)</param>
         /// <remarks>Will throw InvalidOperationException if it errors invoking Win32 API GetDiskFreeSpace</remarks>
         /// <returns>True if file was shredded, otherwise false</returns>
-        public bool ShredIt(int iShredCycles, bool bDebug)
+        public int ShredIt(int iShredCycles, bool bDebug)
         {
             Logging.Log(Strings.ShreddingFile + " " + sfile_path + " ShredCycles = " + iShredCycles,Logging.LogType.Debug);
 
@@ -129,9 +129,9 @@ namespace logrotate
             catch (Exception e)
             {
                 Logging.LogException(e);
-                return false;
+                return 1;
             }
-            return true;
+            return 0;
         }
     }
 }
