@@ -50,10 +50,10 @@
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
     <Compile Include="ShredFile.cs" />
-    <Compile Include="strings.es.Designer.cs">
+    <Compile Include="Strings.es1.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>strings.es.resx</DependentUpon>
+      <DependentUpon>Strings.es.resx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -62,13 +62,13 @@
     <None Include="Content\gnu_license.rtf" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="strings.es.resx">
+    <EmbeddedResource Include="Strings.es.resx">
       <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>strings.es.Designer.cs</LastGenOutput>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.es1.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
