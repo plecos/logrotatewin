@@ -312,4 +312,7 @@
   <data name="ExecutionOutput" xml:space="preserve">
     <value>Execution output</value>
   </data>
+  <data name="ErrorRenamingFile" xml:space="preserve">
+    <value>Error renaming file</value>
+  </data>
 </root>

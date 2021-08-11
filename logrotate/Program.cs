@@ -407,6 +407,10 @@ namespace logrotate
                     // check last date of rotation
                     DateTime lastRotate = Status.GetRotationDate(logfilepath);
                     TimeSpan ts = DateTime.Now - lastRotate;
+
+                    Logging.Log($"Variable [lastRotate]: {lastRotate}", Logging.LogType.Debug);
+                    Logging.Log($"Variable [ts](TotalDays): {ts.TotalDays}", Logging.LogType.Debug);
+
                     if (lrc.Daily)
                     {
                         // check to see if lastRotate is more than a day old
@@ -469,11 +473,11 @@ namespace logrotate
         /// </summary>
         /// <param name="m_filepath">Path to the file to delete</param>
         /// <param name="lrc">Currently loaded configuration file</param>
-        private static void DeleteRotateFile(string m_filepath, logrotateconf lrc)
+        private static int DeleteRotateFile(string m_filepath, logrotateconf lrc)
         {
             if (File.Exists(m_filepath) == false)
             {
-                return;
+                return 0;
             }
 
             if (lrc.Shred)
@@ -492,9 +496,18 @@ namespace logrotate
 
                 if (cla.Debug == false)
                 {
-                    File.Delete(m_filepath);
+                    try
+                    {
+                        File.Delete(m_filepath); // may throw an exception to callin function
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.LogException(e);
+                        return 1;
+                    }
                 }
             }
+            return 0;
         }
 
         #region FirstAction,LastAction,PreRotate,PostRotate
@@ -773,28 +786,41 @@ namespace logrotate
                         Logging.Log(Strings.Renaming + " " + m_fi.FullName + Strings.To + rotate_path + newFile, Logging.LogType.Verbose);
                         if (cla.Debug == false)
                         {
-                            // the there is already a file with the new name, then delete that file so we can rename this one
-                            if (File.Exists(rotate_path + newFile))
+                            try
                             {
-                                DeleteRotateFile(rotate_path + newFile, lrc);
-                            }
-
-                            File.Move(m_fi.FullName, rotate_path + newFile);
-
-                            // if we are set to compress, then check if the new file is compressed.  this is done by looking at the first two bytes
-                            // if they are set to 0x1f8b then it is already compressed.  There is a possibility of a false positive, but this should
-                            // be very unlikely since log files are text files and will not start with these bytes
-
-                            if (lrc.Compress)
-                            {
-                                FileStream fs = File.Open(rotate_path + newFile, FileMode.Open);
-                                byte[] magicnumber = new byte[2];
-                                fs.Read(magicnumber, 0, 2);
-                                fs.Close();
-                                if ((magicnumber[0] != 0x1f) && (magicnumber[1] != 0x8b))
+                                int returnvalue = 0;
+                                // if there is already a file with the new name, then delete that file so we can rename this one
+                                if (File.Exists(rotate_path + newFile))
                                 {
-                                    CompressRotatedFile(rotate_path + newFile, lrc);
+                                    returnvalue = DeleteRotateFile(rotate_path + newFile, lrc);
                                 }
+
+                                if (returnvalue == 0)
+                                {
+                                    File.Move(m_fi.FullName, rotate_path + newFile);
+
+                                    // if we are set to compress, then check if the new file is compressed.  this is done by looking at the first two bytes
+                                    // if they are set to 0x1f8b then it is already compressed.  There is a possibility of a false positive, but this should
+                                    // be very unlikely since log files are text files and will not start with these bytes
+
+                                    if (lrc.Compress)
+                                    {
+                                        FileStream fs = File.Open(rotate_path + newFile, FileMode.Open);
+                                        byte[] magicnumber = new byte[2];
+                                        fs.Read(magicnumber, 0, 2);
+                                        fs.Close();
+                                        if ((magicnumber[0] != 0x1f) && (magicnumber[1] != 0x8b))
+                                        {
+                                            CompressRotatedFile(rotate_path + newFile, lrc);
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Logging.Log(Strings.ErrorRenamingFile + fi.FullName + Strings.To + rotate_path + newFile, Logging.LogType.Error);
+                                Logging.LogException(e);
+                                throw e;
                             }
                         }
                     }
@@ -1141,66 +1167,26 @@ namespace logrotate
         {
             // the first part of the line contains the file(s) or folder(s) that will be associated with this section
             // we need to break this line apart by spaces
-            string split = "";
-            bool bQuotedPath = false;
-            for (int i = 0; i < starting_line.Length; i++)
-            {
-                switch (starting_line[i])
-                {
-                    // if we see the open brace, we are done
-                    case '{':
-                        i = starting_line.Length;
-                        break;
-                    // if we see a ", then this is either starting or ending a file path with spaces
-                    case '\"':
-                        if (bQuotedPath == false)
-                            bQuotedPath = true;
-                        else
-                            bQuotedPath = false;
-                        split += starting_line[i];
-                        break;
-                    case ' ':
-                        // we see a space and we are not processing a quote path, so this is a delimeter and treat it as such
-                        if (bQuotedPath == false)
-                        {
-                            string newsplit = "";
-                            // remove any invalid characters before adding
-                            char[] invalidPathChars = Path.GetInvalidPathChars();
-                            foreach (char ipc in invalidPathChars)
-                            {
-                                for (int ii = 0; ii < split.Length; ii++)
-                                {
-                                    if (split[ii] != ipc)
-                                    {
-                                        newsplit += split[ii];
-                                    }
-                                }
-                                split = newsplit;
-                                newsplit = "";
-                            }
 
-                            lrc.Increment_ProcessCount();
-                            FilePathConfigSection.Add(split, lrc);
-                            split = "";
-                        }
-                        else
-                            split += starting_line[i];
-                        break;
-                    default:
-                        split += starting_line[i];
-                        break;
+            string currentLine = starting_line.Substring(0, starting_line.IndexOf("{") - 1);
+            Regex sectionSpliter = new Regex(@"(?<unquoted>[^\s""']+)|(?:""(?<quoted>[^""]*)"")");
+            MatchCollection sections = sectionSpliter.Matches(currentLine);
+
+            //Identify all sections no matter they are quoted or not and add them to the FilePathConfigSection dictionary
+            foreach (Match curSection in sections)
+            {
+                string sectionName = curSection.Groups["quoted"].Value;
+                if (string.IsNullOrEmpty(sectionName))
+                {
+                    //if section is unquoted, let's try to remove all characters not valid on a windows path format
+                    string regexSearch = new string(Path.GetInvalidPathChars());
+                    Regex r = new Regex(string.Format("[{0}]", Regex.Escape(regexSearch)));
+                    sectionName = r.Replace(curSection.Groups["unquoted"].Value, string.Empty);
                 }
 
-
+                lrc.Increment_ProcessCount();
+                FilePathConfigSection.Add(sectionName, lrc);
             }
-
-            /*
-            string[] split = starting_line.Split(new char[] { ' ' });
-            for (int i = 0; i < split.Length-1; i++)
-            {
-                FilePathConfigSection.Add(split[i], lrc);
-            }
-             */
 
             // read until we hit a } and process
             while (true)
@@ -1241,20 +1227,15 @@ namespace logrotate
             //all further processing will deal with this modified memory stream instead of original file
             string data = File.ReadAllText(_path);
 
-            //get position of {
-            Int32 pos = data.IndexOf("{");
-            string data1 = data.Substring(0, pos).Trim();
+            //remove two or more consecutive spaces
+            string replacePattern = @"\s{2,}";
+            string newdata = Regex.Replace(data, replacePattern, Environment.NewLine);
 
-            //replace all EOLs before pos with spaces
-            string replaceWith = " ";
-            data1 = data1.Replace("\r\n", replaceWith).Replace("\n", replaceWith).Replace("\r", replaceWith);
+            // remove the newline betwenn section name and curly brackets if exists
+            replacePattern = @"(?<a>[^\w""]+)(?<b>{)";
+            newdata = Regex.Replace(newdata, replacePattern, @" $2"); 
 
-            //collapse multiple spaces into one
-            data1 = String.Join(" ", data1.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
-
-            string newdata = data1 + " " + data.Substring(pos);
-
-            byte[] bytes = Encoding.ASCII.GetBytes(newdata);
+            byte[] bytes = Encoding.UTF8.GetBytes(newdata);
             MemoryStream s = new MemoryStream(bytes);
             return s;
         }
