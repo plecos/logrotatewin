@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Net.Mail;
 using System.Text.RegularExpressions;
 using System.Collections;
+using System.Threading.Tasks;
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -515,14 +516,13 @@ namespace logrotate
             Logging.Log("Script file path: " + temp_path, Logging.LogType.Debug);
             try
             {
-                StreamWriter sw = new StreamWriter(temp_path, false);
-
-                foreach (string s in m_script_lines)
+                using (StreamWriter sw = new StreamWriter(temp_path, false))
                 {
-                    sw.WriteLine(s);
+                    foreach (string s in m_script_lines)
+                    {
+                        sw.WriteLine(s);
+                    }
                 }
-
-                sw.Close();
             }
             catch (Exception e)
             {
@@ -540,8 +540,11 @@ namespace logrotate
                     psi.UseShellExecute = false;
                     Logging.Log(Strings.Executing + " " + psi.FileName + " " + psi.Arguments, Logging.LogType.Verbose);
                     Process p = Process.Start(psi);
-                    string output = p.StandardOutput.ReadToEnd();
-                    string error = p.StandardError.ReadToEnd();
+                    var outputTask = p.StandardOutput.ReadToEndAsync();
+                    var errorTask = p.StandardError.ReadToEndAsync();
+                    Task.WaitAll(outputTask, errorTask);
+                    string output = outputTask.Result;
+                    string error = errorTask.Result;
                     p.WaitForExit();
                     if (output != "")
                     {
