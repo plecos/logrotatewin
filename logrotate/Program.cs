@@ -31,6 +31,13 @@ namespace logrotate
 {
     class Program
     {
+        // Exit codes
+        internal const int EXIT_SUCCESS = 0;              // Successful execution
+        internal const int EXIT_GENERAL_ERROR = 1;        // General error (config, runtime errors)
+        internal const int EXIT_INVALID_ARGUMENTS = 2;    // Invalid command line arguments
+        internal const int EXIT_CONFIG_ERROR = 3;         // Configuration file error
+        internal const int EXIT_NO_FILES_TO_ROTATE = 4;   // No files found to rotate
+
         // this object will parse the command line args
         private static CmdLineArgs cla = null;
 
@@ -52,14 +59,14 @@ namespace logrotate
                 {
                     PrintVersion();
                     PrintUsage();
-                    Environment.Exit(0);
+                    Environment.Exit(EXIT_SUCCESS);
                 }
 
                 cla = new CmdLineArgs(args);
                 if (cla.Usage)
                 {
                     PrintUsage();
-                    Environment.Exit(0);
+                    Environment.Exit(EXIT_SUCCESS);
                 }
 
                 Status = new logrotatestatus(cla.AlternateStateFile);
@@ -89,7 +96,7 @@ namespace logrotate
                 if (FilePathConfigSection.Count == 0)
                 {
                     Logging.Log(Strings.NoFoldersFound + " " + Strings.Section, Logging.LogType.Error);
-                    Environment.Exit(-1);
+                    Environment.Exit(EXIT_NO_FILES_TO_ROTATE);
                 }
                 else
                 {
@@ -239,7 +246,7 @@ namespace logrotate
             catch (Exception e)
             {
                 Logging.LogException(e);
-                Environment.Exit(1);
+                Environment.Exit(EXIT_GENERAL_ERROR);
             }
         }
 
@@ -311,7 +318,7 @@ namespace logrotate
                     else
                     {
                         Logging.Log(GlobalConfig.Include + " " + Strings.CouldNotBeFound, Logging.LogType.Error);
-                        Environment.Exit(1);
+                        Environment.Exit(EXIT_CONFIG_ERROR);
                     }
                 }
             }
@@ -1357,7 +1364,7 @@ namespace logrotate
                         default:
                             // no match, so print an error
                             Logging.Log(Strings.UnknownCmdLineArg + ": " + a, Logging.LogType.Error);
-                            Environment.Exit(1);
+                            Environment.Exit(Program.EXIT_INVALID_ARGUMENTS);
                             break;
                     }
                 }

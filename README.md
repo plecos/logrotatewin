@@ -59,3 +59,42 @@ Build Release configuration:
 ```
 dotnet build -c Release
 ```
+
+## Usage
+
+```
+logrotate [options] <configfile>
+```
+
+### Options
+
+- `-d, --debug` - Debug mode (verbose output, no actual rotation)
+- `-f, --force` - Force rotation even if not needed
+- `-v, --verbose` - Verbose output
+- `-s, --state <file>` - Use alternate state file
+- `-?, --usage, --help` - Show usage information
+
+### Exit Codes
+
+LogRotate for Windows uses standard exit codes to indicate success or failure:
+
+| Exit Code | Name | Description |
+|-----------|------|-------------|
+| 0 | SUCCESS | Successful execution |
+| 1 | GENERAL_ERROR | General runtime error or exception |
+| 2 | INVALID_ARGUMENTS | Invalid command line arguments |
+| 3 | CONFIG_ERROR | Configuration file not found or invalid |
+| 4 | NO_FILES_TO_ROTATE | No log files found to process |
+
+These exit codes can be used in scripts to determine the result of the operation:
+
+```powershell
+logrotate myconfig.conf
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Rotation completed successfully"
+} elseif ($LASTEXITCODE -eq 4) {
+    Write-Host "No files to rotate"
+} else {
+    Write-Host "Error occurred: exit code $LASTEXITCODE"
+}
+```

@@ -48,13 +48,75 @@ Build Release configuration:
 dotnet build -c Release
 ```
 
+## Usage
+
+```
+logrotate [options] <configfile>
+```
+
+### Command Line Options
+
+- `-d, --debug` - Debug mode (verbose output, no actual rotation)
+- `-f, --force` - Force rotation even if not needed
+- `-v, --verbose` - Verbose output
+- `-s, --state <file>` - Use alternate state file
+- `-?, --usage, --help` - Show usage information
+
+### Exit Codes
+
+LogRotate for Windows uses standard exit codes to indicate success or failure. These codes can be used in scripts and scheduled tasks to determine the result of the operation.
+
+| Exit Code | Name | Description |
+|-----------|------|-------------|
+| 0 | SUCCESS | Successful execution |
+| 1 | GENERAL_ERROR | General runtime error or exception |
+| 2 | INVALID_ARGUMENTS | Invalid command line arguments |
+| 3 | CONFIG_ERROR | Configuration file not found or invalid |
+| 4 | NO_FILES_TO_ROTATE | No log files found to process |
+
+#### Example Usage in Scripts
+
+**PowerShell:**
+```powershell
+logrotate C:\logs\logrotate.conf
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Rotation completed successfully"
+} elseif ($LASTEXITCODE -eq 4) {
+    Write-Host "No files to rotate"
+} else {
+    Write-Host "Error occurred: exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+```
+
+**Batch File:**
+```batch
+logrotate C:\logs\logrotate.conf
+if %ERRORLEVEL% EQU 0 (
+    echo Rotation completed successfully
+) else if %ERRORLEVEL% EQU 4 (
+    echo No files to rotate
+) else (
+    echo Error occurred: exit code %ERRORLEVEL%
+    exit /b %ERRORLEVEL%
+)
+```
+
 ## Release Notes
 
-### 0.0.0.19 - 10 Dec 2025
+### 0.0.0.20 - 10 Dec 2025
 - Upgraded project to SDK-style format
 - Updated to .NET Framework 4.8
 - Changed platform target from x86 to AnyCPU
 - Modernized build system
+- Standardized exit codes for better script integration
+- Fixed potential deadlock issues in script execution
+- Improved resource disposal with using statements
+- Added comprehensive exit code documentation
+- Updated GitHub Actions workflows for automated releases
+- Added Chocolatey package support
+
+### 0.0.0.19 - (Skipped)
 
 ### 0.0.0.18 - 31 Aug 2018 (beta)
 - Getting source code up to date
