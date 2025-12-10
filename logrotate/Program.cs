@@ -242,13 +242,13 @@ namespace logrotate
             }
         }
 
-        private void RecursiveParseFolders(string sfolder, string pattern, ref List<string> dirs)
-        {
-            foreach (string dir in Directory.GetDirectories(sfolder, pattern))
-            {
+        // private void RecursiveParseFolders(string sfolder, string pattern, ref List<string> dirs)
+        // {
+        //     foreach (string dir in Directory.GetDirectories(sfolder, pattern))
+        //     {
 
-            }
-        }
+        //     }
+        // }
 
 
         /// <summary>
@@ -379,7 +379,7 @@ namespace logrotate
                 if (fi.Length >= lrc.MaxSize)
                 {
                     Logging.Log(Strings.RotateWhenMaximumFileSize, Logging.LogType.Verbose);
-                    
+
                     return true;
                 }
             }
@@ -787,14 +787,16 @@ namespace logrotate
 
                             if (lrc.Compress)
                             {
-                                FileStream fs = File.Open(rotate_path + newFile, FileMode.Open);
                                 byte[] magicnumber = new byte[2];
-                                fs.Read(magicnumber, 0, 2);
-                                fs.Close();
+                                using (FileStream fs = File.Open(rotate_path + newFile, FileMode.Open))
+                                {
+                                    fs.Read(magicnumber, 0, 2);
+                                }
                                 if ((magicnumber[0] != 0x1f) && (magicnumber[1] != 0x8b))
                                 {
                                     CompressRotatedFile(rotate_path + newFile, lrc);
                                 }
+
                             }
                         }
                     }
@@ -862,9 +864,10 @@ namespace logrotate
                         {
                             if (bLogFileExists)
                             {
-                                FileStream fs = new FileStream(fi.FullName, FileMode.Open);
-                                fs.SetLength(0);
-                                fs.Close();
+                                using (FileStream fs = new FileStream(fi.FullName, FileMode.Open))
+                                {
+                                    fs.SetLength(0);
+                                }
                             }
                         }
                         catch (Exception e)
@@ -904,9 +907,11 @@ namespace logrotate
                     {
                         try
                         {
-                            FileStream fs = new FileStream(fi.FullName, FileMode.CreateNew);
-                            fs.SetLength(0);
-                            fs.Close();
+                            using (FileStream fs = new FileStream(fi.FullName, FileMode.CreateNew))
+                            {
+                                // just create the file
+                                fs.SetLength(0);
+                            }
                         }
                         catch (Exception e)
                         {
