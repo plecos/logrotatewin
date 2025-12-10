@@ -9,7 +9,7 @@ on:
       - '.github/**'
       - 'chocolatey/**'
 
-    workflow-dispatch
+  workflow-dispatch:
 
 jobs:
   release:
