@@ -981,17 +981,16 @@ namespace logrotate
                 try
                 {
                     using (FileStream fs = new FileStream(m_filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (FileStream outputFs = new FileStream(compressed_file_path, FileMode.Create))
+                    using (System.IO.Compression.GZipStream zs = new System.IO.Compression.GZipStream(outputFs, System.IO.Compression.CompressionMode.Compress))
                     {
-                        using (System.IO.Compression.GZipStream zs = new System.IO.Compression.GZipStream(new FileStream(compressed_file_path, FileMode.Create), System.IO.Compression.CompressionMode.Compress))
+                        byte[] buffer = new byte[chunkSize];
+                        while (true)
                         {
-                            byte[] buffer = new byte[chunkSize];
-                            while (true)
-                            {
-                                int bytesRead = fs.Read(buffer, 0, chunkSize);
-                                if (bytesRead == 0)
-                                    break;
-                                zs.Write(buffer, 0, bytesRead);
-                            }
+                            int bytesRead = fs.Read(buffer, 0, chunkSize);
+                            if (bytesRead == 0)
+                                break;
+                            zs.Write(buffer, 0, bytesRead);
                         }
                     }
 
@@ -1017,31 +1016,29 @@ namespace logrotate
             if ((lrc.SMTPServer != "") && (lrc.SMTPPort != 0) && (lrc.MailLast) && (lrc.MailAddress != ""))
             {
                 Logging.Log(Strings.SendingEmailTo + " " + lrc.MailAddress, Logging.LogType.Verbose);
-                Attachment a = new Attachment(m_file_attachment_path);
                 try
                 {
-                    MailMessage mm = new MailMessage(lrc.MailFrom, lrc.MailAddress);
-                    mm.Subject = "Log file rotated";
-                    mm.Body = Strings.ProgramName + " has rotated the following log file: " + m_filepath + "\r\n\nThe rotated log file is attached.";
-
-                    mm.Attachments.Add(a);
-                    SmtpClient smtp = new SmtpClient(lrc.SMTPServer, lrc.SMTPPort);
-                    if (lrc.SMTPUserName != "")
+                    using (MailMessage mm = new MailMessage(lrc.MailFrom, lrc.MailAddress))
+                    using (Attachment a = new Attachment(m_file_attachment_path))
                     {
-                        smtp.Credentials = new System.Net.NetworkCredential(lrc.SMTPUserName, lrc.SMTPUserPassword);
-                    }
-                    smtp.EnableSsl = lrc.SMTPUseSSL;
+                        mm.Subject = "Log file rotated";
+                        mm.Body = Strings.ProgramName + " has rotated the following log file: " + m_filepath + "\r\n\nThe rotated log file is attached.";
 
-                    smtp.Send(mm);
+                        mm.Attachments.Add(a);
+                        SmtpClient smtp = new SmtpClient(lrc.SMTPServer, lrc.SMTPPort);
+                        if (lrc.SMTPUserName != "")
+                        {
+                            smtp.Credentials = new System.Net.NetworkCredential(lrc.SMTPUserName, lrc.SMTPUserPassword);
+                        }
+                        smtp.EnableSsl = lrc.SMTPUseSSL;
+
+                        smtp.Send(mm);
+                    }
                 }
                 catch (Exception e)
                 {
                     Logging.LogException(e);
                     return;
-                }
-                finally
-                {
-                    a.Dispose();
                 }
             }
         }
@@ -1087,66 +1084,66 @@ namespace logrotate
 
             //StreamReader sr = new StreamReader(m_path_to_file);
 
-            MemoryStream ms = GetModifiedFile(m_path_to_file);
-
-            StreamReader sr = new StreamReader(ms, Encoding.UTF8, true);
-
-            bool bSawASection = false;
-            // read in lines until done
-            while (true)
+            using (MemoryStream ms = GetModifiedFile(m_path_to_file))
+            using (StreamReader sr = new StreamReader(ms, Encoding.UTF8, true))
             {
-                string line = sr.ReadLine();
-                if (line == null)
+                bool bSawASection = false;
+                // read in lines until done
+                while (true)
                 {
-                    break;
-                }
+                    string line = sr.ReadLine();
+                    if (line == null)
+                    {
+                        break;
+                    }
 
-                line = line.Trim();
-                Logging.Log(Strings.ReadLine + " " + line, Logging.LogType.Debug);
+                    line = line.Trim();
+                    Logging.Log(Strings.ReadLine + " " + line, Logging.LogType.Debug);
 
-                // skip blank lines
-                if (string.IsNullOrEmpty(line))
-                {
-                    continue;
-                }
+                    // skip blank lines
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        continue;
+                    }
 
-                // if line begins with #, then it is a comment and can be ignored
-                if (line[0] == '#')
-                {
-                    Logging.Log(Strings.Skipping + " " + Strings.Comment, Logging.LogType.Debug);
-                    continue;
-                }
+                    // if line begins with #, then it is a comment and can be ignored
+                    if (line[0] == '#')
+                    {
+                        Logging.Log(Strings.Skipping + " " + Strings.Comment, Logging.LogType.Debug);
+                        continue;
+                    }
 
-                // every line until we've met { must be a file to rotate
-                //if (!bSawASection)
-                //{
-                //    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
+                    // every line until we've met { must be a file to rotate
+                    //if (!bSawASection)
+                    //{
+                    //    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
 
-                //    // create a new config object taking defaults from Global Config
-                //    logrotateconf lrc = new logrotateconf(GlobalConfig);
+                    //    // create a new config object taking defaults from Global Config
+                    //    logrotateconf lrc = new logrotateconf(GlobalConfig);
 
-                //    ProcessConfileFileSection(line, sr, lrc);
-                //}
+                    //    ProcessConfileFileSection(line, sr, lrc);
+                    //}
 
-                // see if there is a { in the line.  If so, this is the beginning of a section 
-                // otherwise it may be a global setting
-                if (line.Contains("{"))
-                {
-                    bSawASection = true;
-                    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
+                    // see if there is a { in the line.  If so, this is the beginning of a section
+                    // otherwise it may be a global setting
+                    if (line.Contains("{"))
+                    {
+                        bSawASection = true;
+                        Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
 
-                    // create a new config object taking defaults from Global Config
-                    logrotateconf lrc = new logrotateconf(GlobalConfig);
+                        // create a new config object taking defaults from Global Config
+                        logrotateconf lrc = new logrotateconf(GlobalConfig);
 
-                    ProcessConfileFileSection(line, sr, lrc);
-                }
-                else
-                {
-                    if (bSawASection == false)
-                        GlobalConfig.Parse(line, cla.Debug);
+                        ProcessConfileFileSection(line, sr, lrc);
+                    }
                     else
                     {
-                        Logging.Log(Strings.GlobalOptionsAboveSections, Logging.LogType.Error);
+                        if (bSawASection == false)
+                            GlobalConfig.Parse(line, cla.Debug);
+                        else
+                        {
+                            Logging.Log(Strings.GlobalOptionsAboveSections, Logging.LogType.Error);
+                        }
                     }
                 }
             }
