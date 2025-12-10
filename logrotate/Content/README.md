@@ -105,18 +105,18 @@ if %ERRORLEVEL% EQU 0 (
 ## Release Notes
 
 ### 0.0.0.20 - 10 Dec 2025
-- Upgraded project to SDK-style format
-- Updated to .NET Framework 4.8
-- Changed platform target from x86 to AnyCPU
-- Modernized build system
 - Standardized exit codes for better script integration
 - Fixed potential deadlock issues in script execution
 - Improved resource disposal with using statements
 - Added comprehensive exit code documentation
-- Updated GitHub Actions workflows for automated releases
-- Added Chocolatey package support
 
-### 0.0.0.19 - (Skipped)
+### 0.0.0.19 - 10 Dec 2025
+- Upgraded project to SDK-style format
+- Updated to .NET Framework 4.8
+- Changed platform target from x86 to AnyCPU
+- Modernized build system
+- Added Chocolatey package support
+- Updated GitHub Actions workflows for automated releases
 
 ### 0.0.0.18 - 31 Aug 2018 (beta)
 - Getting source code up to date
