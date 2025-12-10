@@ -27,6 +27,22 @@ Requirements:
 
 .NET Framework 4.8 or better
 
+## Installation
+
+### Chocolatey (Recommended)
+
+The easiest way to install LogRotate for Windows is using Chocolatey:
+
+```powershell
+choco install logrotatewin
+```
+
+After installation, the `logrotate` command will be available in your PATH.
+
+### Manual Installation
+
+Download the latest release from the [Releases page](https://github.com/ken-salter/logrotatewin/releases) and extract to your desired location.
+
 ## Building
 
 The project uses SDK-style project format and can be built using:

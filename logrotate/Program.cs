@@ -10,7 +10,7 @@ using System.Collections;
 
 /*
     LogRotate - rotates, compresses, and mails system logs
-    Copyright (C) 2012-2018  Ken Salter
+    Copyright (C) 2012-2025  Ken Salter
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
