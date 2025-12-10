@@ -1,0 +1,165 @@
+name: Publish to Chocolatey
+
+on:
+  workflow_dispatch:  # Manual trigger for now
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.0.0.19)'
+        required: true
+        type: string
+  # Uncomment to enable automatic publishing after releases are created
+  # release:
+  #   types: [published]
+
+jobs:
+  publish-chocolatey:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Get version
+      id: version
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $version = "${{ inputs.version }}"
+        } else {
+          # Extract version from release tag (remove 'v' prefix)
+          $version = "${{ github.event.release.tag_name }}".TrimStart('v')
+        }
+        Write-Host "Version: $version"
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Download release asset
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $tag = "v$version"
+        $fileName = "logrotatewin-$version.zip"
+        $url = "https://github.com/${{ github.repository }}/releases/download/$tag/$fileName"
+
+        Write-Host "Downloading from: $url"
+        Invoke-WebRequest -Uri $url -OutFile $fileName
+
+        # Calculate SHA256
+        $hash = (Get-FileHash $fileName -Algorithm SHA256).Hash
+        Write-Host "SHA256: $hash"
+        echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
+        echo "DOWNLOAD_URL=$url" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+      id: download
+
+    - name: Update Chocolatey package files
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $url = "${{ steps.download.outputs.DOWNLOAD_URL }}"
+        $checksum = "${{ steps.download.outputs.SHA256 }}"
+
+        # Update nuspec version
+        [xml]$nuspec = Get-Content "chocolatey\logrotatewin.nuspec"
+        $nuspec.package.metadata.version = $version
+        $nuspec.Save("chocolatey\logrotatewin.nuspec")
+
+        # Create chocolateyinstall.ps1 for GitHub releases
+        @"
+        `$ErrorActionPreference = 'Stop'
+
+        `$packageName = 'logrotatewin'
+        `$toolsDir    = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
+        `$url         = '$url'
+
+        `$packageArgs = @{
+          packageName   = `$packageName
+          unzipLocation = `$toolsDir
+          url           = `$url
+          checksum      = '$checksum'
+          checksumType  = 'sha256'
+        }
+
+        Install-ChocolateyZipPackage @packageArgs
+
+        # Verify installation
+        `$exePath = Join-Path `$toolsDir "logrotate.exe"
+        if (Test-Path `$exePath) {
+          Write-Host "LogRotate for Windows has been installed to: `$toolsDir"
+          Write-Host "You can now run 'logrotate' from the command line."
+
+          `$contentDir = Join-Path `$toolsDir "Content"
+          if (Test-Path `$contentDir) {
+            Write-Host ""
+            Write-Host "Sample configuration file: `$contentDir\logrotate.conf"
+            Write-Host "Documentation: `$contentDir\README.md"
+          }
+        } else {
+          Write-Error "Installation failed: logrotate.exe not found at `$exePath"
+        }
+        "@ | Out-File -FilePath "chocolatey\tools\chocolateyinstall.ps1" -Encoding utf8
+
+        Write-Host "Updated package files for version $version"
+      shell: pwsh
+
+    - name: Build Chocolatey package
+      run: |
+        cd chocolatey
+        choco pack
+      shell: pwsh
+
+    - name: Test Chocolatey package
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $package = "chocolatey\logrotatewin.$version.nupkg"
+
+        if (Test-Path $package) {
+          Write-Host "Package created successfully: $package"
+          $size = (Get-Item $package).Length / 1KB
+          Write-Host "Package size: $([math]::Round($size, 2)) KB"
+        } else {
+          Write-Error "Package not found: $package"
+          exit 1
+        }
+      shell: pwsh
+
+    - name: Publish to Chocolatey Community Repository
+      if: github.event_name == 'release' || github.event.inputs.version != ''
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $package = "chocolatey\logrotatewin.$version.nupkg"
+
+        # Check if API key is configured
+        if ([string]::IsNullOrEmpty("${{ secrets.CHOCOLATEY_API_KEY }}")) {
+          Write-Warning "CHOCOLATEY_API_KEY secret is not configured."
+          Write-Warning "To enable automatic publishing:"
+          Write-Warning "1. Get your API key from https://community.chocolatey.org/account"
+          Write-Warning "2. Add it as a repository secret named CHOCOLATEY_API_KEY"
+          Write-Warning "3. Re-run this workflow"
+          Write-Host ""
+          Write-Host "Package is ready at: $package"
+          Write-Host "To publish manually, run:"
+          Write-Host "  choco push $package --source https://push.chocolatey.org/"
+          exit 0
+        }
+
+        Write-Host "Publishing to Chocolatey Community Repository..."
+        choco push $package --source https://push.chocolatey.org/ --api-key ${{ secrets.CHOCOLATEY_API_KEY }}
+
+        if ($LASTEXITCODE -eq 0) {
+          Write-Host "Successfully published to Chocolatey!"
+          Write-Host "Package will be available after moderation at:"
+          Write-Host "  https://community.chocolatey.org/packages/logrotatewin/$version"
+        } else {
+          Write-Error "Failed to publish to Chocolatey"
+          exit 1
+        }
+      shell: pwsh
+
+    - name: Upload Chocolatey package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chocolatey-package-${{ steps.version.outputs.VERSION }}
+        path: chocolatey/*.nupkg
+        retention-days: 30

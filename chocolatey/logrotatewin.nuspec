@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>logrotatewin</id>
+    <version>0.0.0.19</version>
+    <packageSourceUrl>https://github.com/ken-salter/logrotatewin</packageSourceUrl>
+    <owners>Ken Salter</owners>
+    <title>LogRotate for Windows</title>
+    <authors>Ken Salter</authors>
+    <projectUrl>https://sourceforge.net/projects/logrotatewin/</projectUrl>
+    <projectSourceUrl>https://github.com/ken-salter/logrotatewin</projectSourceUrl>
+    <copyright>Copyright © 2013-2025 Ken Salter</copyright>
+    <licenseUrl>https://www.gnu.org/licenses/gpl-3.0.html</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>logrotate log rotation windows admin</tags>
+    <summary>LogRotate utility for Windows - manages log file rotation and compression</summary>
+    <description>
+# LogRotate for Windows
+
+This is a Windows implementation of the logrotate utility found in Linux platforms. The goal is to use the same command line parameters and files as the Linux version.
+
+## Features
+
+- Rotate log files based on size, time, or both
+- Compress rotated log files
+- Delete old log files
+- Execute scripts before/after rotation
+- Support for wildcards in file paths
+- Compatible with Linux logrotate configuration files
+
+## Requirements
+
+- .NET Framework 4.8 or better
+
+## Usage
+
+```
+logrotate [options] &lt;configfile&gt;
+```
+
+For more information, see the documentation at the project homepage.
+    </description>
+    <releaseNotes>
+### 0.0.0.19 - 10 Dec 2025
+- Upgraded project to SDK-style format
+- Updated to .NET Framework 4.8
+- Changed platform target from x86 to AnyCPU
+- Modernized build system
+    </releaseNotes>
+    <dependencies>
+      <dependency id="dotnetfx" version="4.8.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

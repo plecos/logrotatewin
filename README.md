@@ -2,7 +2,7 @@
 This is a Windows implementation of the logrotate utility found in Linux platforms. The goal is to use the same command line parameters and files as the Linux version.
 
 LogRotate for Windows
-Written by Ken Salter (C) 2012-2015
+Written by Ken Salter (C) 2012-2025
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,4 +25,37 @@ https://sourceforge.net/projects/logrotatewin/
 
 Requirements:
 
-.NET Framework v2.0 or better
+.NET Framework 4.8 or better
+
+## Installation
+
+### Chocolatey (Recommended)
+
+The easiest way to install LogRotate for Windows is using Chocolatey:
+
+```powershell
+choco install logrotatewin
+```
+
+After installation, the `logrotate` command will be available in your PATH.
+
+### Manual Installation
+
+Download the latest release from the [Releases page](https://github.com/ken-salter/logrotatewin/releases) and extract to your desired location.
+
+## Building
+
+The project uses SDK-style project format and can be built using:
+- Visual Studio 2019 or later
+- Visual Studio Code with C# extension
+- .NET SDK 6.0 or later (for tooling)
+
+Build from command line:
+```
+dotnet build
+```
+
+Build Release configuration:
+```
+dotnet build -c Release
+```

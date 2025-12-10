@@ -190,3 +190,9 @@ ModelManifest.xml
 /logrotateconf/
 /logrotategui/
 /.vs
+
+# Chocolatey package files (binaries copied during build)
+chocolatey/tools/*.exe
+chocolatey/tools/*.config
+chocolatey/tools/Content/
+chocolatey/*.nupkg
