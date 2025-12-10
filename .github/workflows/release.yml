@@ -79,30 +79,34 @@ jobs:
         Copy-Item "$outputDir\Content" -Destination $packageName -Recurse
 
         # Create README for package
-        @"
-# LogRotate for Windows v$version
+        # Create README content as a list of strings
+        $readmeContent = @(
+          "# LogRotate for Windows v$version",
+          "",
+          "This is the binary distribution of LogRotate for Windows.",
+          "",
+          "## Installation",
+          "",
+          "1. Extract this ZIP file to your desired location",
+          "2. Add the directory to your PATH environment variable",
+          "3. Run ``logrotate --help`` to see usage information",
+          "",
+          "## Quick Start",
+          "",
+          "See Content\README.md for detailed documentation and Content\logrotate.conf for a sample configuration file.",
+          "",
+          "## Requirements",
+          "",
+          "- .NET Framework 4.8 or better",
+          "",
+          "## More Information",
+          "",
+          "- Project Homepage: https://sourceforge.net/projects/logrotatewin/",
+          "- GitHub: https://github.com/ken-salter/logrotatewin"
+        )
 
-This is the binary distribution of LogRotate for Windows.
-
-## Installation
-
-1. Extract this ZIP file to your desired location
-2. Add the directory to your PATH environment variable
-3. Run ``logrotate --help`` to see usage information
-
-## Quick Start
-
-See Content\README.md for detailed documentation and Content\logrotate.conf for a sample configuration file.
-
-## Requirements
-
-- .NET Framework 4.8 or better
-
-## More Information
-
-- Project Homepage: https://sourceforge.net/projects/logrotatewin/
-- GitHub: https://github.com/ken-salter/logrotatewin
-"@ | Out-File -FilePath "$packageName\README.txt" -Encoding utf8
+        # Write README to file
+        $readmeContent | Out-File -FilePath "$packageName\README.txt" -Encoding utf8
 
         # Create ZIP
         Compress-Archive -Path $packageName\* -DestinationPath $packagePath -Force
