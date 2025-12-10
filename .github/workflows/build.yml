@@ -1,0 +1,55 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for version detection
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Debug
+      run: dotnet build --configuration Debug --no-restore
+
+    - name: Build Release
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test executable
+      run: |
+        $exe = "logrotate\bin\Release\net48\logrotate.exe"
+        if (Test-Path $exe) {
+          Write-Host "Testing executable..."
+          & $exe 2>&1 | Select-Object -First 5
+          if ($LASTEXITCODE -eq 1) {
+            Write-Host "Executable works (expected exit code 1 for no args)"
+          } else {
+            Write-Host "Exit code: $LASTEXITCODE"
+          }
+        } else {
+          Write-Error "Executable not found at $exe"
+          exit 1
+        }
+      shell: pwsh
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: logrotatewin-build-${{ github.sha }}
+        path: |
+          logrotate/bin/Release/net48/**
+        retention-days: 7

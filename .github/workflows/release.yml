@@ -1,0 +1,177 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'chocolatey/**'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Get version from csproj
+      id: version
+      run: |
+        [xml]$csproj = Get-Content "logrotate\logrotate.csproj"
+        $version = $csproj.Project.PropertyGroup.Version
+        Write-Host "Version: $version"
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "TAG=v$version" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Check if tag exists
+      id: check_tag
+      run: |
+        $tag = "${{ steps.version.outputs.TAG }}"
+        git fetch --tags
+        $tagExists = git tag -l $tag
+        if ($tagExists) {
+          Write-Host "Tag $tag already exists, skipping release"
+          echo "EXISTS=true" >> $env:GITHUB_OUTPUT
+        } else {
+          Write-Host "Tag $tag does not exist, will create release"
+          echo "EXISTS=false" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+
+    - name: Build Release
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: dotnet build --configuration Release
+
+    - name: Test executable
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: |
+        $exe = "logrotate\bin\Release\net48\logrotate.exe"
+        Write-Host "Testing executable..."
+        & $exe 2>&1 | Select-Object -First 5
+      shell: pwsh
+
+    - name: Create release package
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $outputDir = "logrotate\bin\Release\net48"
+        $packageName = "logrotatewin-$version"
+        $packagePath = "$packageName.zip"
+
+        # Create package directory
+        New-Item -ItemType Directory -Path $packageName -Force
+
+        # Copy files
+        Copy-Item "$outputDir\logrotate.exe" -Destination $packageName
+        Copy-Item "$outputDir\logrotate.exe.config" -Destination $packageName
+        Copy-Item "$outputDir\Content" -Destination $packageName -Recurse
+
+        # Create README for package
+        @"
+# LogRotate for Windows v$version
+
+This is the binary distribution of LogRotate for Windows.
+
+## Installation
+
+1. Extract this ZIP file to your desired location
+2. Add the directory to your PATH environment variable
+3. Run ``logrotate --help`` to see usage information
+
+## Quick Start
+
+See Content\README.md for detailed documentation and Content\logrotate.conf for a sample configuration file.
+
+## Requirements
+
+- .NET Framework 4.8 or better
+
+## More Information
+
+- Project Homepage: https://sourceforge.net/projects/logrotatewin/
+- GitHub: https://github.com/ken-salter/logrotatewin
+"@ | Out-File -FilePath "$packageName\README.txt" -Encoding utf8
+
+        # Create ZIP
+        Compress-Archive -Path $packageName\* -DestinationPath $packagePath -Force
+
+        # Calculate SHA256
+        $hash = (Get-FileHash $packagePath -Algorithm SHA256).Hash
+        Write-Host "SHA256: $hash"
+        echo "PACKAGE_PATH=$packagePath" >> $env:GITHUB_OUTPUT
+        echo "SHA256=$hash" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+      id: package
+
+    - name: Generate release notes
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      id: release_notes
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $notes = @"
+        ## LogRotate for Windows v$version
+
+        ### Installation
+
+        #### Chocolatey (Recommended - coming soon)
+        ``````powershell
+        choco install logrotatewin
+        ``````
+
+        #### Manual Installation
+        1. Download the ZIP file below
+        2. Extract to your desired location
+        3. Add the directory to your PATH
+
+        ### What's Changed
+
+        See the [commit history](https://github.com/${{ github.repository }}/commits/master) for details.
+
+        ### Checksums
+
+        - **SHA256**: ``${{ steps.package.outputs.SHA256 }}``
+
+        ### Requirements
+
+        - .NET Framework 4.8 or better
+
+        **Full Changelog**: https://github.com/${{ github.repository }}/compare/v0.0.0.18...${{ steps.version.outputs.TAG }}
+        "@
+
+        # Save to file for GitHub release
+        $notes | Out-File -FilePath release-notes.md -Encoding utf8
+      shell: pwsh
+
+    - name: Create GitHub Release
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.TAG }}
+        name: LogRotate for Windows ${{ steps.version.outputs.VERSION }}
+        body_path: release-notes.md
+        files: |
+          ${{ steps.package.outputs.PACKAGE_PATH }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Output release URL
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: |
+        Write-Host "Release created: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.TAG }}"
+        Write-Host "Download URL: https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.TAG }}/${{ steps.package.outputs.PACKAGE_PATH }}"
+        Write-Host "SHA256: ${{ steps.package.outputs.SHA256 }}"
+      shell: pwsh
