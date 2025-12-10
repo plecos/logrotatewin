@@ -9,6 +9,8 @@ on:
       - '.github/**'
       - 'chocolatey/**'
 
+    workflow-dispatch
+
 jobs:
   release:
     runs-on: windows-latest
