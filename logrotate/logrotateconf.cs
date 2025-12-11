@@ -36,6 +36,7 @@ namespace logrotate
         private bool bcopy = false;
         private bool bcopytruncate = false;
         private bool bcreate = false;
+        private int iminutes = 0;
         private bool bhourly = false;
         private bool bdaily = false;
         private bool bdateext = false;
@@ -55,6 +56,7 @@ namespace logrotate
         private int imaxage = 0;
         private bool bmissingok = false;
         private bool bmonthly = false;
+        private int imonthday = 0; // 0 = not specified, 1-31 = specific day
         private bool bmaillast = true;
         private string solddir = "";
         private List<string> spostrotate = null;
@@ -67,6 +69,7 @@ namespace logrotate
         private int istart = 1;
         private string[] stabooext = { ".swp" };
         private bool bweekly = false;
+        private int iweekday = -1; // -1 = not specified, 0-6 = Sunday-Saturday
         private bool byearly = false;
         private bool bshred = false;
         private int ishredcycles = 3;
@@ -203,6 +206,10 @@ namespace logrotate
             get { return imaxsize; }
         }
 
+        public int Minutes
+        {
+            get { return iminutes; }
+        }
         public bool Hourly
         {
             get { return bhourly; }
@@ -211,9 +218,21 @@ namespace logrotate
         {
             get { return bdaily; }
         }
+        public bool Weekly
+        {
+            get { return bweekly; }
+        }
+        public int Weekday
+        {
+            get { return iweekday; }
+        }
         public bool Monthly
         {
             get { return bmonthly; }
+        }
+        public int MonthDay
+        {
+            get { return imonthday; }
         }
         public bool Yearly
         {
@@ -268,10 +287,6 @@ namespace logrotate
         {
             get { return bsharedscripts; }
         }
-        public bool Weekly
-        {
-            get { return bweekly; }
-        }
         public int Rotate
         {
             get { return irotate; }
@@ -319,6 +334,7 @@ namespace logrotate
             bcopy = m_source.bcopy;
             bcopytruncate = m_source.bcopytruncate;
             bcreate = m_source.bcreate;
+            iminutes = m_source.iminutes;
             bhourly = m_source.bhourly;
             bdaily = m_source.bdaily;
             bdateext = m_source.bdateext;
@@ -331,6 +347,7 @@ namespace logrotate
             imaxage = m_source.imaxage;
             bmissingok = m_source.bmissingok;
             bmonthly = m_source.bmonthly;
+            imonthday = m_source.imonthday;
             solddir = m_source.solddir;
             spostrotate = m_source.spostrotate;
             sprerotate = m_source.sprerotate;
@@ -342,6 +359,7 @@ namespace logrotate
             istart = m_source.istart;
             stabooext = m_source.stabooext;
             bweekly = m_source.bweekly;
+            iweekday = m_source.iweekday;
             byearly = m_source.byearly;
             bshred = m_source.bshred;
             ishredcycles = m_source.ishredcycles;
@@ -430,6 +448,10 @@ namespace logrotate
                     bcreate = false;
                     PrintDebug(split[0], bcreate.ToString(), bDebug);
                     break;
+                case "minutes":
+                    iminutes = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
                 case "hourly":
                     bhourly = true;
                     PrintDebug(split[0], bhourly.ToString(), bDebug);
@@ -456,7 +478,16 @@ namespace logrotate
                     break;
                 case "monthly":
                     bmonthly = true;
-                    PrintDebug(split[0], bmonthly.ToString(), bDebug);
+                    // Optional parameter: specific day of month (1-31)
+                    if (split.Length > 1)
+                    {
+                        imonthday = Convert.ToInt32(split[1]);
+                        PrintDebug(split[0], split[1], bDebug);
+                    }
+                    else
+                    {
+                        PrintDebug(split[0], bmonthly.ToString(), bDebug);
+                    }
                     break;
                 case "sharedscripts":
                     bsharedscripts = true;
@@ -469,7 +500,16 @@ namespace logrotate
                     break;
                 case "weekly":
                     bweekly = true;
-                    PrintDebug(split[0], bweekly.ToString(), bDebug);
+                    // Optional parameter: specific day of week (0-6, Sunday=0)
+                    if (split.Length > 1)
+                    {
+                        iweekday = Convert.ToInt32(split[1]);
+                        PrintDebug(split[0], split[1], bDebug);
+                    }
+                    else
+                    {
+                        PrintDebug(split[0], bweekly.ToString(), bDebug);
+                    }
                     break;
                 case "yearly":
                     byearly = true;

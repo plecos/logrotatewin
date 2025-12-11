@@ -407,7 +407,7 @@ namespace logrotate
             {
                 //if ((lrc.Daily == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
                 // fix for rotate not working as submitted by Matt Richardson 1/19/2015
-                if ((lrc.Hourly == false) && (lrc.Daily == false) && (lrc.Weekly == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
+                if ((lrc.Minutes == 0) && (lrc.Hourly == false) && (lrc.Daily == false) && (lrc.Weekly == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
                 {
                     // this is a misconfiguration is we get here
                     Logging.Log(Strings.NoTimestampDirectives, Logging.LogType.Verbose);
@@ -418,6 +418,14 @@ namespace logrotate
                     // check last date of rotation
                     DateTime lastRotate = Status.GetRotationDate(logfilepath);
                     TimeSpan ts = DateTime.Now - lastRotate;
+                    if (lrc.Minutes > 0)
+                    {
+                        // check to see if lastRotate is older than specified minutes
+                        if (ts.TotalMinutes > lrc.Minutes)
+                        {
+                            bDoRotate = true;
+                        }
+                    }
                     if (lrc.Hourly)
                     {
                         // check to see if lastRotate is more than an hour old
@@ -441,6 +449,15 @@ namespace logrotate
                         {
                             bDoRotate = true;
                         }
+                        else if (lrc.Weekday >= 0)
+                        {
+                            // Specific weekday specified (0-6, Sunday=0)
+                            // Rotate if current day matches the specified weekday and it's been at least a day since last rotation
+                            if ((int)DateTime.Now.DayOfWeek == lrc.Weekday && ts.TotalDays >= 1)
+                            {
+                                bDoRotate = true;
+                            }
+                        }
                         else if (DateTime.Now.DayOfWeek < lastRotate.DayOfWeek)
                         {
                             bDoRotate = true;
@@ -448,10 +465,22 @@ namespace logrotate
                     }
                     if (lrc.Monthly)
                     {
-                        // check if the month is different
-                        if ((lastRotate.Year != DateTime.Now.Year) || ((lastRotate.Year == DateTime.Now.Year) && (lastRotate.Month != DateTime.Now.Month)))
+                        if (lrc.MonthDay > 0)
                         {
-                            bDoRotate = true;
+                            // Specific day of month specified (1-31)
+                            // Rotate if current day matches the specified monthday and it's been at least a day since last rotation
+                            if (DateTime.Now.Day == lrc.MonthDay && ts.TotalDays >= 1)
+                            {
+                                bDoRotate = true;
+                            }
+                        }
+                        else
+                        {
+                            // check if the month is different
+                            if ((lastRotate.Year != DateTime.Now.Year) || ((lastRotate.Year == DateTime.Now.Year) && (lastRotate.Month != DateTime.Now.Month)))
+                            {
+                                bDoRotate = true;
+                            }
                         }
                     }
                     if (lrc.Yearly)
