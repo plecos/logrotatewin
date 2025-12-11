@@ -1258,6 +1258,16 @@ namespace logrotate
 
             //get position of {
             Int32 pos = data.IndexOf("{");
+
+            // If there's no { in the file, it only contains global directives
+            // Return the file as-is without modification
+            if (pos == -1)
+            {
+                byte[] globalOnlyBytes = Encoding.ASCII.GetBytes(data);
+                MemoryStream globalOnlyStream = new MemoryStream(globalOnlyBytes);
+                return globalOnlyStream;
+            }
+
             string data1 = data.Substring(0, pos).Trim();
 
             //split into lines and separate global directives from file paths

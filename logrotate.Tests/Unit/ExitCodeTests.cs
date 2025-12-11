@@ -119,9 +119,9 @@ namespace logrotate.Tests.Unit
                 int exitCode = RunLogRotate(emptyConfig);
 
                 // Assert
-                // Currently returns GENERAL_ERROR (1) when config has no file sections
-                // This could be improved to return NO_FILES_TO_ROTATE (4)
-                exitCode.Should().Be(EXIT_GENERAL_ERROR);
+                // Returns NO_FILES_TO_ROTATE (4) when config has no file sections
+                // This is the correct behavior after fixing GetModifiedFile to handle global-only configs
+                exitCode.Should().Be(EXIT_NO_FILES_TO_ROTATE);
             }
             finally
             {
