@@ -2,6 +2,9 @@
 
 Written by Ken Salter (C) 2012-2025
 
+You can help support my efforts by buying me a coffee!
+https://buymeacoffee.com/kenasalter
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
