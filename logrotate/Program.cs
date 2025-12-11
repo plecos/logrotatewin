@@ -1252,7 +1252,7 @@ namespace logrotate
         {
             //we expect files-to-rotate to be put in one line, ending on { and separated by spaces
             //this function takes care of the case when files are separated by newline
-            //to fix that we read original config file into memory, then replace newlines with space 
+            //to fix that we read original config file into memory, then replace newlines with space
             //all further processing will deal with this modified memory stream instead of original file
             string data = File.ReadAllText(_path);
 
@@ -1260,14 +1260,45 @@ namespace logrotate
             Int32 pos = data.IndexOf("{");
             string data1 = data.Substring(0, pos).Trim();
 
-            //replace all EOLs before pos with spaces
-            string replaceWith = " ";
-            data1 = data1.Replace("\r\n", replaceWith).Replace("\n", replaceWith).Replace("\r", replaceWith);
+            //split into lines and separate global directives from file paths
+            //global directives should remain on separate lines
+            //only file paths (lines that look like file paths) should be collapsed
+            string[] lines = data1.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            StringBuilder globalDirectives = new StringBuilder();
+            StringBuilder filePaths = new StringBuilder();
 
-            //collapse multiple spaces into one
-            data1 = String.Join(" ", data1.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+            foreach (string line in lines)
+            {
+                string trimmedLine = line.Trim();
 
-            string newdata = data1 + " " + data.Substring(pos);
+                // skip blank lines and comments
+                if (string.IsNullOrEmpty(trimmedLine) || trimmedLine[0] == '#')
+                    continue;
+
+                // simple heuristic: if line contains path separators or quotes, it's likely a file path
+                // otherwise it's a directive
+                if (trimmedLine.Contains("\\") || trimmedLine.Contains("/") || trimmedLine.Contains("\""))
+                {
+                    filePaths.Append(trimmedLine);
+                    filePaths.Append(" ");
+                }
+                else
+                {
+                    globalDirectives.AppendLine(trimmedLine);
+                }
+            }
+
+            // reconstruct: global directives (each on own line) + file paths (on one line) + rest of file
+            string filePathLine = filePaths.ToString().Trim();
+            string globalPart = globalDirectives.ToString();
+
+            // collapse multiple spaces in file path line
+            if (!string.IsNullOrEmpty(filePathLine))
+            {
+                filePathLine = String.Join(" ", filePathLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            string newdata = globalPart + filePathLine + " " + data.Substring(pos);
 
             byte[] bytes = Encoding.ASCII.GetBytes(newdata);
             MemoryStream s = new MemoryStream(bytes);

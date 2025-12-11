@@ -74,9 +74,9 @@ Tests exit code behavior:
 ### Summary
 
 **Total Tests**: 77
-**Passing**: 73 (95%) ✅✅✅
+**Passing**: 76 (99%) ✅✅✅
 **Failing**: 0
-**Skipped**: 4 (document behaviors needing investigation)
+**Skipped**: 1 (documents lenient parsing behavior)
 
 **By Category**:
 - ✅ Unit Tests: 40/40 (100%)
@@ -84,12 +84,12 @@ Tests exit code behavior:
   - Logging: 11/11 (100%)
   - State management: 10/10 (100%)
   - Exit codes: 7/7 (100%)
-- ✅ Integration Tests: 33/37 (89%)
+- ✅ Integration Tests: 36/37 (97%)
   - Basic rotation: 6/6 (100%)
   - Compression: 3/3 (100%)
   - Size-based rotation: 3/3 (100%)
   - Date-based rotation: 12/12 (100%)
-  - Config parsing: 10/14 (71%) - 4 skipped pending investigation
+  - Config parsing: 13/14 (93%) - 1 skipped (invalid directive handling)
 
 ## Implementation Behaviors Documented by Tests
 
@@ -231,19 +231,19 @@ dotnet test --logger "console;verbosity=detailed"
 - `minsize` works with time directives using AND logic (both conditions must be met)
 - `maxsize` works with time directives using OR logic (either condition triggers rotation)
 
-### ⚠️ ConfigParsingTests (14 tests - 10 passing, 4 skipped)
-- ⏭️ Comment handling - **SKIPPED**: Test environment issue
+### ✅ ConfigParsingTests (14 tests - 13 passing, 1 skipped)
+- ✅ Comment handling - Comments are properly filtered from config files
 - ✅ Multiple log sections in one config file
 - ✅ Quoted paths with spaces
-- ⏭️ Invalid directives - **SKIPPED**: May not cause errors (lenient parsing)
+- ⏭️ Invalid directives - **SKIPPED**: Documents lenient parsing behavior
 - ✅ Empty lines ignored
 - ✅ Multiple files in one section
 - ✅ Size directives with K suffix (kilobytes)
 - ✅ Size directives with M suffix (megabytes)
 - ✅ Config without rotate directive
 - ✅ Directives on same line
-- ⏭️ Global defaults - **SKIPPED**: Needs investigation
-- ⏭️ Section overriding global settings - **SKIPPED**: Needs investigation
+- ✅ Global defaults - Global directives apply to all sections
+- ✅ Section overriding global settings - Local settings override globals
 - ✅ Missing closing brace handled gracefully
 - ✅ Mixed tabs and spaces for indentation
 
@@ -252,13 +252,17 @@ dotnet test --logger "console;verbosity=detailed"
 - Multiple log sections can be defined in one config file
 - Multiple files can share same rotation settings in one section
 - Size directives support K, M, G suffixes
-- Empty lines and leading/trailing whitespace ignored
+- Empty lines and comments are filtered during config processing
+- Global directives (before any section) apply as defaults to all sections
+- Local directives in sections override global defaults
 - Parser handles missing closing braces gracefully (may treat EOF as implicit close)
 
-**Tests Needing Investigation**:
-- Comment handling inside config blocks (exit code 4 - NO_FILES_TO_ROTATE)
-- Global defaults application to sections
-- Invalid directive error handling (currently appears lenient)
+**Implementation Fix - Comment and Global Directive Handling**:
+The `GetModifiedFile()` function in [Program.cs:1251-1306](f:\\Repos\\logrotatewin\\logrotate\\Program.cs#L1251-L1306) was updated to:
+- Filter out comment lines (starting with `#`) before processing
+- Distinguish between global directives and file paths
+- Keep global directives on separate lines (so they're processed as globals)
+- Only collapse file paths into a single line (the original intent)
 
 ## Future Test Implementation
 

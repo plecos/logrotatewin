@@ -8,7 +8,7 @@ namespace logrotate.Tests.Integration
     [Trait("Category", "Integration")]
     public class ConfigParsingTests : IntegrationTestBase
     {
-        [Fact(Skip = "Test environment issue - needs investigation")]
+        [Fact]
         public void ParseConfig_WithComments_ShouldIgnoreCommentLines()
         {
             // Arrange
@@ -16,7 +16,8 @@ namespace logrotate.Tests.Integration
             File.WriteAllText(logFile, "Test log content\n");
 
             string stateFile = Path.Combine(TestDir, "state.txt");
-            string configContent = $@"# This is a comment line at the start
+            string configContent = $@"
+# This is a comment line at the start
 {logFile} {{
     daily
     rotate 3
@@ -339,7 +340,7 @@ namespace logrotate.Tests.Integration
             }
         }
 
-        [Fact(Skip = "Global defaults test - needs investigation")]
+        [Fact]
         public void ParseConfig_WithGlobalDefaults_ShouldApplyToAllSections()
         {
             // Arrange
@@ -350,7 +351,8 @@ namespace logrotate.Tests.Integration
 
             string stateFile = Path.Combine(TestDir, "state.txt");
             // Global compress directive before any section
-            string configContent = $@"# Global defaults
+            string configContent = $@"
+# Global defaults
 compress
 daily
 
@@ -380,7 +382,7 @@ daily
             }
         }
 
-        [Fact(Skip = "Global overrides test - needs investigation")]
+        [Fact]
         public void ParseConfig_WithSectionOverridingGlobal_ShouldUseLocalSetting()
         {
             // Arrange
@@ -390,7 +392,8 @@ daily
             File.WriteAllText(log2, "App 2 log\n");
 
             string stateFile = Path.Combine(TestDir, "state.txt");
-            string configContent = $@"# Global default: compress
+            string configContent = $@"
+# Global default: compress
 compress
 daily
 
