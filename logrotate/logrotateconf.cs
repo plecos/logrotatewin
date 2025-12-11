@@ -464,7 +464,7 @@ namespace logrotate
                     PrintDebug(split[0], Strings.UnknownDirective, bDebug);
                     break;
                 case "compressext":
-                    scompressext = split[1];
+                    scompressext = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "scompressoptions":
@@ -473,11 +473,11 @@ namespace logrotate
                     PrintDebug(split[0], Strings.UnknownDirective, bDebug);
                     break;
                 case "dateformat":
-                    sdateformat = split[1];
+                    sdateformat = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "mail":
-                    smail = split[1];
+                    smail = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "nomail":
@@ -489,7 +489,7 @@ namespace logrotate
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "olddir":
-                    solddir = split[1];
+                    solddir = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "noolddir":
@@ -607,7 +607,7 @@ namespace logrotate
                     PrintDebug(split[0], bmaillast.ToString(), bDebug);
                     break;
                 case "smtpserver":
-                    ssmtpserver = split[1];
+                    ssmtpserver = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "smtpport":
@@ -623,15 +623,15 @@ namespace logrotate
                     PrintDebug(split[0], bsmtpssl.ToString(), bDebug);
                     break;
                 case "smtpuser":
-                    ssmtpuser = split[1];
+                    ssmtpuser = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "smtpfrom":
-                    ssmtpfrom = split[1];
+                    ssmtpfrom = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "smtpuserpwd":
-                    ssmtpuserpwd = split[1];
+                    ssmtpuserpwd = StripQuotes(split[1]);
                     PrintDebug(split[0], "****", bDebug);
                     break;
                 case "dateext":
@@ -652,7 +652,7 @@ namespace logrotate
                     }
                     break;
                 case "include":
-                    sinclude = split[1];
+                    sinclude = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "logfileopen_retry":
@@ -668,7 +668,7 @@ namespace logrotate
                     PrintDebug(split[0], inumretry_logfileopen.ToString(), bDebug);
                     break;
                 default:
-                    Logging.Log(Strings.UnknownDirective + " " + line, Logging.LogType.Error);
+                    Logging.Log(Strings.UnknownDirective + " " + line, Logging.LogType.Warning);
                     return false;
             }
             return true;
@@ -742,6 +742,32 @@ namespace logrotate
         {
             spostrotate.Clear();
             spostrotate = null;
+        }
+
+        /// <summary>
+        /// Strips surrounding quotes from a directive value to match Linux logrotate shell quoting rules.
+        /// Supports both single quotes (') and double quotes (").
+        /// </summary>
+        /// <param name="value">The directive value that may contain quotes</param>
+        /// <returns>The value with surrounding quotes removed</returns>
+        private string StripQuotes(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            // Check if value is surrounded by double quotes
+            if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"')
+            {
+                return value.Substring(1, value.Length - 2);
+            }
+
+            // Check if value is surrounded by single quotes
+            if (value.Length >= 2 && value[0] == '\'' && value[value.Length - 1] == '\'')
+            {
+                return value.Substring(1, value.Length - 2);
+            }
+
+            return value;
         }
 
         public void Increment_ProcessCount()

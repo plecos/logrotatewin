@@ -32,6 +32,7 @@ namespace logrotate
             Debug,
             Verbose,
             Required,
+            Warning,
             Error
         }
 
@@ -84,13 +85,16 @@ namespace logrotate
         /// Logs depending on type
         /// </summary>
         /// <param name="m_text">Text to Log</param>
-        /// <param name="m_type">Type of Log (Error,Required,Debug,Verbose)</param>
+        /// <param name="m_type">Type of Log (Error,Warning,Required,Debug,Verbose)</param>
         public static void Log(string m_text, LogType m_type)
         {
             switch (m_type)
             {
                 case LogType.Error:
                     DoErrorLog(m_text);
+                    return;
+                case LogType.Warning:
+                    DoWarningLog(m_text);
                     return;
                 case LogType.Required:
                     DoLog(m_text);
@@ -137,6 +141,17 @@ namespace logrotate
             Console.ForegroundColor = bCurrentColor;
 #if DEBUG
             Debug.WriteLine(Strings.ProgramName + " [DBG]: " + m_text);
+#endif
+        }
+
+        private static void DoWarningLog(string m_text)
+        {
+            ConsoleColor bCurrentColor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(Strings.ProgramName + " [WRN]: " + m_text);
+            Console.ForegroundColor = bCurrentColor;
+#if DEBUG
+            Debug.WriteLine(Strings.ProgramName + " [WRN]: " + m_text);
 #endif
         }
 
