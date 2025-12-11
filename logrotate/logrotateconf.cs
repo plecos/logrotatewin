@@ -424,6 +424,10 @@ namespace logrotate
                     bifempty = true;
                     PrintDebug(split[0], bifempty.ToString(), bDebug);
                     break;
+                case "notifempty":
+                    bifempty = false;
+                    PrintDebug(split[0], bifempty.ToString(), bDebug);
+                    break;
                 case "missingok":
                     bmissingok = true;
                     PrintDebug(split[0], bmissingok.ToString(), bDebug);

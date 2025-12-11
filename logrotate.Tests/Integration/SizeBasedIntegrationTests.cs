@@ -56,8 +56,8 @@ namespace logrotate.Tests.Integration
 
             try
             {
-                // Act
-                RunLogRotate("-s", stateFile, "-f", configFile);
+                // Act - Don't use -f flag, as force overrides size checks
+                RunLogRotate("-s", stateFile, configFile);
 
                 // Assert
                 File.Exists($"{logFile}.1").Should().BeFalse("file should not be rotated when below size threshold");

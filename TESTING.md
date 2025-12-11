@@ -74,8 +74,8 @@ Tests exit code behavior:
 ### Summary
 
 **Total Tests**: 51
-**Passing**: 49 (96%) ✅
-**Failing**: 2 (4%)
+**Passing**: 51 (100%) ✅✅✅
+**Failing**: 0 (0%)
 
 **By Category**:
 - ✅ Unit Tests: 40/40 (100%)
@@ -83,10 +83,10 @@ Tests exit code behavior:
   - Logging: 11/11 (100%)
   - State management: 10/10 (100%)
   - Exit codes: 7/7 (100%)
-- ⚠️ Integration Tests: 9/11 (82%)
-  - Basic rotation: 5/6 (83%)
+- ✅ Integration Tests: 11/11 (100%)
+  - Basic rotation: 6/6 (100%)
   - Compression: 3/3 (100%)
-  - Size-based rotation: 1/2 (50%)
+  - Size-based rotation: 3/3 (100%)
 
 ## Implementation Behaviors Documented by Tests
 
@@ -112,33 +112,33 @@ Exit codes follow this pattern:
 
 Note: Missing config files and empty configs currently return GENERAL_ERROR (1) rather than more specific error codes. This is by design and tested.
 
-### 4. Integration Test Failures Analysis
+### 4. Integration Test Fixes and Implementation Details
 
-After comparing with the [official Linux logrotate man page](https://man7.org/linux/man-pages/man8/logrotate.8.html), here's the analysis:
+After comparing with the [official Linux logrotate man page](https://man7.org/linux/man-pages/man8/logrotate.8.html), all integration test issues were resolved:
 
-**Test 1: `RotateLog_WithNotIfEmpty_ShouldSkipEmptyFiles`** - **REVEALS BUG** ❌
-- **Issue**: The `notifempty` directive is not implemented in the codebase
-- **Current State**: Only `ifempty` is implemented ([Program.cs:368-372](f:\Repos\logrotatewin\logrotate\Program.cs#L368-L372), [logrotateconf.cs:423-426](f:\Repos\logrotatewin\logrotate\logrotateconf.cs#L423-L426))
+**Test 1: `RotateLog_WithNotIfEmpty_ShouldSkipEmptyFiles`** - **FIXED** ✅
+- **Issue**: The `notifempty` directive was not implemented in the codebase
+- **Resolution**:
+  - Added `notifempty` directive parsing in [logrotateconf.cs:427-430](f:\Repos\logrotatewin\logrotate\logrotateconf.cs#L427-L430)
+  - Moved empty file check before force flag check in [Program.cs:359-369](f:\Repos\logrotatewin\logrotate\Program.cs#L359-L369)
+- **Key Insight**: Force flag should override TIMING constraints but respect CONTENT policies like `notifempty`
 - **Per Linux man page**: `notifempty` should "do not rotate the log if it is empty"
-- **Action Needed**: Implement the `notifempty` directive parsing and logic
-- **Test Status**: Test is **CORRECT**, implementation is **INCOMPLETE**
+- **Test Status**: **PASSING** ✅
 
-**Test 2: `RotateLog_WithSize_ShouldNotRotateWhenBelowSize`** - **NEEDS INVESTIGATION** ⚠️
-- **Issue**: File rotates even when below size threshold
-- **Possible Causes**:
-  - Behavior when `size` is used without time directives (daily/weekly/monthly)
-  - First-run behavior that sets rotation date
-  - Interaction with rotation logic in [Program.cs:395-411](f:\Repos\logrotatewin\logrotate\Program.cs#L395-L411)
-- **Per Linux man page**: "Log files are rotated only if they grow bigger than size bytes"
-- **Action Needed**: Investigate rotation logic when only `size` directive is specified
-- **Test Status**: May reveal edge case or test configuration issue
+**Test 2: `RotateLog_WithSize_ShouldNotRotateWhenBelowSize`** - **FIXED** ✅
+- **Issue**: Test used `-f` (force) flag which overrides ALL rotation criteria including size
+- **Resolution**: Removed `-f` flag from test since force is meant to override both timing and size checks
+- **Key Insight**: Per Linux logrotate behavior, `-f` forces rotation "even if it doesn't think this is necessary", bypassing size thresholds, minsize, age, etc.
+- **Per Linux man page**: Force flag overrides all configured rotation conditions
+- **Implementation**: Current implementation correctly prioritizes force flag
+- **Test Status**: **PASSING** ✅ - test now correctly validates size-based rotation without force flag
 
 **Test 3: `RotateLog_WithRotateCount_ShouldCreateRotatedFiles`** - **FIXED** ✅
 - **Issue**: Test expected log file recreation without `create` directive
+- **Resolution**: Added `create` directive to test configuration at [BasicRotationTests.cs:22](f:\Repos\logrotatewin\logrotate.Tests\Integration\BasicRotationTests.cs#L22)
 - **Per Linux man page**: "Immediately after rotation... the log file is created" only when `create` directive is specified
 - **Current Implementation**: Correctly does NOT recreate file without `create` directive
-- **Action Taken**: Added `create` directive to test configuration
-- **Test Status**: **PASSING** - test now correctly validates file recreation with `create` directive
+- **Test Status**: **PASSING** ✅
 
 ## Test Helpers
 
@@ -176,12 +176,12 @@ dotnet test --logger "console;verbosity=detailed"
 
 ## Integration Tests Implemented
 
-### ✅ BasicRotationTests (6 tests - 4 passing, 2 failing)
+### ✅ BasicRotationTests (6 tests - ALL PASSING)
 - ✅ Rotating files with rotate count
-- ⚠️ Creating new log file after rotation (needs 'create' directive)
+- ✅ Creating new log file after rotation with 'create' directive
 - ✅ Deleting oldest file when exceeding rotate count
 - ✅ Handling missing files with 'missingok'
-- ⚠️ Skipping empty files with 'notifempty' (implementation rotates anyway)
+- ✅ Skipping empty files with 'notifempty'
 - ✅ Rotating wildcard patterns
 
 ### ✅ CompressionIntegrationTests (3 tests - ALL PASSING)
@@ -189,9 +189,9 @@ dotnet test --logger "console;verbosity=detailed"
 - ✅ Not compressing with 'nocompress'
 - ✅ Verifying compressed files are smaller than originals
 
-### ✅ SizeBasedIntegrationTests (3 tests - 2 passing, 1 failing)
+### ✅ SizeBasedIntegrationTests (3 tests - ALL PASSING)
 - ✅ Rotating when file exceeds size threshold
-- ⚠️ Not rotating when file is below size (implementation rotates anyway)
+- ✅ Not rotating when file is below size threshold (without force flag)
 - ✅ Combining size-based rotation with compression
 
 ## Future Test Implementation

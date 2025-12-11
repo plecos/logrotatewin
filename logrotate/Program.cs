@@ -342,14 +342,8 @@ namespace logrotate
         /// <returns>True if need to rotate, False if not</returns>
         private static bool CheckForRotate(string logfilepath, logrotateconf lrc)
         {
-
-            if (cla.Force)
-            {
-                Logging.Log(Strings.ForceOptionRotate, Logging.LogType.Verbose);
-                return true;
-            }
-
             bool bDoRotate = false;
+
             // first check if file exists.  if it doesn't error out unless we are set not to
             if (File.Exists(logfilepath) == false)
             {
@@ -362,6 +356,8 @@ namespace logrotate
 
             FileInfo fi = new FileInfo(logfilepath);
 
+            // Check notifempty BEFORE force flag - this is a content policy, not a timing constraint
+            // The force flag should override timing checks but respect content-based directives
             //if (logfilepath.Length == 0)
             if (fi.Length == 0)
             {
@@ -370,6 +366,13 @@ namespace logrotate
                     Logging.Log(Strings.LogFileEmpty + " - " + Strings.Skipping, Logging.LogType.Verbose);
                     return false;
                 }
+            }
+
+            // Force flag overrides timing constraints but respects content policies like notifempty
+            if (cla.Force)
+            {
+                Logging.Log(Strings.ForceOptionRotate, Logging.LogType.Verbose);
+                return true;
             }
 
             // determine if we need to rotate the file.  this can be based on a number of criteria, including size, date, etc.
