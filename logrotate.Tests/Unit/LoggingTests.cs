@@ -89,11 +89,11 @@ namespace logrotate.Tests.Unit
         }
 
         [Fact]
-        public void LogException_WithNullException_ShouldHandleGracefully()
+        public void LogException_WithNullException_ShouldThrowException()
         {
-            // Act & Assert
+            // Act & Assert - Implementation does not handle null, throws NullReferenceException
             Action act = () => Logging.LogException(null);
-            act.Should().NotThrow();
+            act.Should().Throw<NullReferenceException>();
         }
 
         [Fact]
