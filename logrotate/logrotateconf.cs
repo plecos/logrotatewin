@@ -29,10 +29,10 @@ namespace logrotate
 
         #region Private variables
         private bool bgzipcompress = true;
-        //private string scompresscmd = "gzip";
-        //private string suncompressedcmd = "gunzip";
+        private string scompresscmd = ""; // Empty = use built-in GZipStream
+        private string suncompresscmd = ""; // Empty = use built-in GZipStream
         private string scompressext;
-        //private string scompressoptions = "-9";
+        private string scompressoptions = ""; // Default options for external compression
         private bool bcopy = false;
         private bool bcopytruncate = false;
         private bool bcreate = false;
@@ -98,6 +98,18 @@ namespace logrotate
         public string CompressExt
         {
             get { return scompressext; }
+        }
+        public string CompressCmd
+        {
+            get { return scompresscmd; }
+        }
+        public string UncompressCmd
+        {
+            get { return suncompresscmd; }
+        }
+        public string CompressOptions
+        {
+            get { return scompressoptions; }
         }
         public bool DelayCompress
         {
@@ -295,10 +307,10 @@ namespace logrotate
         public logrotateconf(logrotateconf m_source)
         {
             bgzipcompress = m_source.bgzipcompress;
-            //scompresscmd = m_source.scompresscmd;
-            //suncompressedcmd = m_source.suncompressedcmd;
+            scompresscmd = m_source.scompresscmd;
+            suncompresscmd = m_source.suncompresscmd;
+            scompressoptions = m_source.scompressoptions;
             scompressext = m_source.scompressext;
-            //scompressoptions = m_source.scompressoptions;
             bcopy = m_source.bcopy;
             bcopytruncate = m_source.bcopytruncate;
             bcreate = m_source.bcreate;
@@ -454,23 +466,21 @@ namespace logrotate
                     PrintDebug(split[0], byearly.ToString(), bDebug);
                     break;
                 case "compresscmd":
-                    //scompresscmd = split[1];
-                    //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                    scompresscmd = StripQuotes(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "uncompresscmd":
-                    //suncompressedcmd = split[1];
-                    //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                    suncompresscmd = StripQuotes(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "compressext":
                     scompressext = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
-                case "scompressoptions":
-                    //scompressoptions = split[1];
-                    //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                case "compressoptions":
+                    // Join all remaining parts in case options contain spaces
+                    scompressoptions = string.Join(" ", split, 1, split.Length - 1);
+                    PrintDebug(split[0], scompressoptions, bDebug);
                     break;
                 case "dateformat":
                     sdateformat = StripQuotes(split[1]);

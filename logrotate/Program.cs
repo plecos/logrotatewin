@@ -962,13 +962,12 @@ namespace logrotate
         }
 
         /// <summary>
-        /// Compress a file using .Net 
+        /// Compress a file using built-in .NET GZipStream or external compression command
         /// </summary>
         /// <param name="m_filepath">the file to compress</param>
         /// <param name="lrc">logrotateconf object</param>
         private static void CompressRotatedFile(string m_filepath, logrotateconf lrc)
         {
-            int chunkSize = 65536;
             FileInfo fi = new FileInfo(m_filepath);
 
             if (fi.Extension == "." + lrc.CompressExt)
@@ -983,18 +982,16 @@ namespace logrotate
             {
                 try
                 {
-                    using (FileStream fs = new FileStream(m_filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (FileStream outputFs = new FileStream(compressed_file_path, FileMode.Create))
-                    using (System.IO.Compression.GZipStream zs = new System.IO.Compression.GZipStream(outputFs, System.IO.Compression.CompressionMode.Compress))
+                    // Check if custom compression command is specified
+                    if (!string.IsNullOrEmpty(lrc.CompressCmd))
                     {
-                        byte[] buffer = new byte[chunkSize];
-                        while (true)
-                        {
-                            int bytesRead = fs.Read(buffer, 0, chunkSize);
-                            if (bytesRead == 0)
-                                break;
-                            zs.Write(buffer, 0, bytesRead);
-                        }
+                        // Use external compression command
+                        CompressWithExternalCommand(m_filepath, compressed_file_path, lrc);
+                    }
+                    else
+                    {
+                        // Use built-in GZipStream (default behavior)
+                        CompressWithGZipStream(m_filepath, compressed_file_path);
                     }
 
                     DeleteRotateFile(m_filepath, lrc);
@@ -1004,6 +1001,83 @@ namespace logrotate
                     Logging.Log("Error in CompressRotatedFile with file " + m_filepath, Logging.LogType.Error);
                     Logging.LogException(e);
                     return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compress a file using built-in .NET GZipStream
+        /// </summary>
+        /// <param name="m_filepath">Source file path</param>
+        /// <param name="compressed_file_path">Destination compressed file path</param>
+        private static void CompressWithGZipStream(string m_filepath, string compressed_file_path)
+        {
+            int chunkSize = 65536;
+            using (FileStream fs = new FileStream(m_filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream outputFs = new FileStream(compressed_file_path, FileMode.Create))
+            using (System.IO.Compression.GZipStream zs = new System.IO.Compression.GZipStream(outputFs, System.IO.Compression.CompressionMode.Compress))
+            {
+                byte[] buffer = new byte[chunkSize];
+                while (true)
+                {
+                    int bytesRead = fs.Read(buffer, 0, chunkSize);
+                    if (bytesRead == 0)
+                        break;
+                    zs.Write(buffer, 0, bytesRead);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compress a file using an external compression command
+        /// </summary>
+        /// <param name="m_filepath">Source file path</param>
+        /// <param name="compressed_file_path">Destination compressed file path</param>
+        /// <param name="lrc">logrotateconf object containing compression settings</param>
+        private static void CompressWithExternalCommand(string m_filepath, string compressed_file_path, logrotateconf lrc)
+        {
+            // Build command arguments
+            // Most compressors follow pattern: compresscmd [options] < input > output
+            // Or: compresscmd [options] -c input > output
+            string arguments = "";
+
+            if (!string.IsNullOrEmpty(lrc.CompressOptions))
+            {
+                arguments = lrc.CompressOptions + " ";
+            }
+
+            // Use -c flag to write to stdout, then redirect
+            arguments += "-c \"" + m_filepath + "\"";
+
+            Logging.Log("Running compression command: " + lrc.CompressCmd + " " + arguments, Logging.LogType.Debug);
+
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = lrc.CompressCmd;
+            psi.Arguments = arguments;
+            psi.UseShellExecute = false;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+            psi.CreateNoWindow = true;
+
+            using (Process process = Process.Start(psi))
+            {
+                // Write stdout to the compressed file
+                using (FileStream outputFile = new FileStream(compressed_file_path, FileMode.Create))
+                {
+                    process.StandardOutput.BaseStream.CopyTo(outputFile);
+                }
+
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    Logging.Log("Compression command failed with exit code " + process.ExitCode, Logging.LogType.Error);
+                    if (!string.IsNullOrEmpty(stderr))
+                    {
+                        Logging.Log("Compression error: " + stderr, Logging.LogType.Error);
+                    }
+                    throw new Exception("Compression command failed");
                 }
             }
         }
