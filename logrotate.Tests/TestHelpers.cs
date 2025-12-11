@@ -14,8 +14,16 @@ namespace logrotate.Tests
         public static string CreateTempLogFile(long sizeInBytes, string extension = ".log")
         {
             string tempPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}{extension}");
+            CreateTempLogFile(tempPath, sizeInBytes);
+            return tempPath;
+        }
 
-            using (FileStream fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
+        /// <summary>
+        /// Creates a log file at the specified path with specified size
+        /// </summary>
+        public static void CreateTempLogFile(string filePath, long sizeInBytes)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
                 // Write test data
                 byte[] buffer = new byte[Math.Min(sizeInBytes, 8192)];
@@ -37,8 +45,6 @@ namespace logrotate.Tests
                     remaining -= toWrite;
                 }
             }
-
-            return tempPath;
         }
 
         /// <summary>

@@ -73,15 +73,20 @@ Tests exit code behavior:
 
 ### Summary
 
-**Total Tests**: 40
-**Passing**: 40 (100%) ✅
-**Failing**: 0 (0%)
+**Total Tests**: 51
+**Passing**: 49 (96%) ✅
+**Failing**: 2 (4%)
 
 **By Category**:
-- ✅ Command-line parsing: 15/15 (100%)
-- ✅ Logging: 11/11 (100%)
-- ✅ State management: 10/10 (100%)
-- ✅ Exit codes: 7/7 (100%)
+- ✅ Unit Tests: 40/40 (100%)
+  - Command-line parsing: 15/15 (100%)
+  - Logging: 11/11 (100%)
+  - State management: 10/10 (100%)
+  - Exit codes: 7/7 (100%)
+- ⚠️ Integration Tests: 9/11 (82%)
+  - Basic rotation: 5/6 (83%)
+  - Compression: 3/3 (100%)
+  - Size-based rotation: 1/2 (50%)
 
 ## Implementation Behaviors Documented by Tests
 
@@ -106,6 +111,34 @@ Exit codes follow this pattern:
 - NO_FILES_TO_ROTATE (4): No matching files found
 
 Note: Missing config files and empty configs currently return GENERAL_ERROR (1) rather than more specific error codes. This is by design and tested.
+
+### 4. Integration Test Failures Analysis
+
+After comparing with the [official Linux logrotate man page](https://man7.org/linux/man-pages/man8/logrotate.8.html), here's the analysis:
+
+**Test 1: `RotateLog_WithNotIfEmpty_ShouldSkipEmptyFiles`** - **REVEALS BUG** ❌
+- **Issue**: The `notifempty` directive is not implemented in the codebase
+- **Current State**: Only `ifempty` is implemented ([Program.cs:368-372](f:\Repos\logrotatewin\logrotate\Program.cs#L368-L372), [logrotateconf.cs:423-426](f:\Repos\logrotatewin\logrotate\logrotateconf.cs#L423-L426))
+- **Per Linux man page**: `notifempty` should "do not rotate the log if it is empty"
+- **Action Needed**: Implement the `notifempty` directive parsing and logic
+- **Test Status**: Test is **CORRECT**, implementation is **INCOMPLETE**
+
+**Test 2: `RotateLog_WithSize_ShouldNotRotateWhenBelowSize`** - **NEEDS INVESTIGATION** ⚠️
+- **Issue**: File rotates even when below size threshold
+- **Possible Causes**:
+  - Behavior when `size` is used without time directives (daily/weekly/monthly)
+  - First-run behavior that sets rotation date
+  - Interaction with rotation logic in [Program.cs:395-411](f:\Repos\logrotatewin\logrotate\Program.cs#L395-L411)
+- **Per Linux man page**: "Log files are rotated only if they grow bigger than size bytes"
+- **Action Needed**: Investigate rotation logic when only `size` directive is specified
+- **Test Status**: May reveal edge case or test configuration issue
+
+**Test 3: `RotateLog_WithRotateCount_ShouldCreateRotatedFiles`** - **FIXED** ✅
+- **Issue**: Test expected log file recreation without `create` directive
+- **Per Linux man page**: "Immediately after rotation... the log file is created" only when `create` directive is specified
+- **Current Implementation**: Correctly does NOT recreate file without `create` directive
+- **Action Taken**: Added `create` directive to test configuration
+- **Test Status**: **PASSING** - test now correctly validates file recreation with `create` directive
 
 ## Test Helpers
 
@@ -141,19 +174,39 @@ dotnet test --collect:"XPlat Code Coverage"
 dotnet test --logger "console;verbosity=detailed"
 ```
 
+## Integration Tests Implemented
+
+### ✅ BasicRotationTests (6 tests - 4 passing, 2 failing)
+- ✅ Rotating files with rotate count
+- ⚠️ Creating new log file after rotation (needs 'create' directive)
+- ✅ Deleting oldest file when exceeding rotate count
+- ✅ Handling missing files with 'missingok'
+- ⚠️ Skipping empty files with 'notifempty' (implementation rotates anyway)
+- ✅ Rotating wildcard patterns
+
+### ✅ CompressionIntegrationTests (3 tests - ALL PASSING)
+- ✅ Compressing rotated files with 'compress'
+- ✅ Not compressing with 'nocompress'
+- ✅ Verifying compressed files are smaller than originals
+
+### ✅ SizeBasedIntegrationTests (3 tests - 2 passing, 1 failing)
+- ✅ Rotating when file exceeds size threshold
+- ⚠️ Not rotating when file is below size (implementation rotates anyway)
+- ✅ Combining size-based rotation with compression
+
 ## Future Test Implementation
 
-### Integration Tests (Not Yet Implemented)
-- RotationTests - File rotation scenarios
-- CompressionTests - Gzip compression
-- ScriptExecutionTests - Pre/post rotation scripts
-- EmailTests - Email functionality
-- ConfigParsingTests - Config file parsing
+### Integration Tests (Partially Implemented)
+- ⚠️ Date-based rotation (daily, weekly, monthly, yearly)
+- ⚠️ Config parsing (include directives, global defaults, comments)
+- ❌ Script execution (pre/post rotation scripts)
+- ❌ Email functionality
+- ❌ Advanced rotation options (copy, copytruncate, dateext)
 
 ### End-to-End Tests (Not Yet Implemented)
-- DailyRotationScenarioTests
-- SizeBasedRotationScenarioTests
-- ComplexConfigScenarioTests
+- Daily rotation with real time delays
+- Complex multi-log configurations
+- Long-running rotation scenarios
 
 ### Performance Tests (Not Yet Implemented)
 - Large file rotation (1GB+)
