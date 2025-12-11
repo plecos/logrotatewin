@@ -455,12 +455,11 @@ namespace logrotate.Tests.Integration
             }
         }
 
-        [Fact(Skip = "maxsize directive not implemented - see logrotateconf.cs")]
+        [Fact]
         public void RotateLog_WithMaxSizeAndDaily_ShouldRotateWhenMaxSizeExceeded()
         {
-            // This test reveals that the 'maxsize' directive is not implemented in the config parser
+            // Tests that maxsize directive uses OR logic with time directives
             // According to Linux logrotate spec, maxsize should rotate when size exceeded OR time criteria met
-            // Implementation needed: Add "case maxsize:" in logrotateconf.cs similar to minsize and size
 
             // Arrange
             string logFile = Path.Combine(TestDir, "test.log");

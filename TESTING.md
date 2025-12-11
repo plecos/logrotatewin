@@ -74,8 +74,9 @@ Tests exit code behavior:
 ### Summary
 
 **Total Tests**: 63
-**Passing**: 62 (98%) ✅✅✅
-**Skipped**: 1 (documents missing `maxsize` directive)
+**Passing**: 63 (100%) ✅✅✅
+**Failing**: 0
+**Skipped**: 0
 
 **By Category**:
 - ✅ Unit Tests: 40/40 (100%)
@@ -83,11 +84,11 @@ Tests exit code behavior:
   - Logging: 11/11 (100%)
   - State management: 10/10 (100%)
   - Exit codes: 7/7 (100%)
-- ✅ Integration Tests: 22/22 (100%)
+- ✅ Integration Tests: 23/23 (100%)
   - Basic rotation: 6/6 (100%)
   - Compression: 3/3 (100%)
   - Size-based rotation: 3/3 (100%)
-  - Date-based rotation: 11/12 (92%) - 1 skipped pending maxsize implementation
+  - Date-based rotation: 12/12 (100%)
 
 ## Implementation Behaviors Documented by Tests
 
@@ -141,14 +142,15 @@ After comparing with the [official Linux logrotate man page](https://man7.org/li
 - **Current Implementation**: Correctly does NOT recreate file without `create` directive
 - **Test Status**: **PASSING** ✅
 
-### 5. Missing Features Discovered
+### 5. Features Implemented During Testing
 
-**`maxsize` Directive - NOT IMPLEMENTED** ⚠️
-- **Discovered by**: [DateBasedRotationTests.cs:458](f:\Repos\logrotatewin\logrotate.Tests\Integration\DateBasedRotationTests.cs#L458) (test skipped)
-- **Issue**: The `maxsize` directive is not implemented in the config parser
-- **Expected Behavior**: Per Linux logrotate, `maxsize` should rotate when file exceeds size **OR** when time criteria is met (whichever comes first)
-- **Current State**: MaxSize property exists in [logrotateconf.cs:188](f:\Repos\logrotatewin\logrotate\logrotateconf.cs#L188) and rotation logic exists in [Program.cs:388-396](f:\Repos\logrotatewin\logrotate\Program.cs#L388-L396), but config parsing is missing
-- **Implementation Needed**: Add `case "maxsize":` in logrotateconf.cs similar to `minsize` and `size` directives (around line 503-530)
+**`maxsize` Directive - IMPLEMENTED** ✅
+- **Discovered by**: [DateBasedRotationTests.cs:458](f:\Repos\logrotatewin\logrotate.Tests\Integration\DateBasedRotationTests.cs#L458)
+- **Issue Found**: The `maxsize` directive config parsing was missing, though the property and rotation logic existed
+- **Implementation**: Added `case "maxsize":` in [logrotateconf.cs:525-546](f:\Repos\logrotatewin\logrotate\logrotateconf.cs#L525-L546)
+- **Behavior**: Per Linux logrotate spec, `maxsize` rotates when file exceeds size **OR** when time criteria is met (whichever comes first)
+- **Bug Fixed**: Also corrected minsize debug output to use `iminsize` instead of `lsize` at line 523
+- **Test Status**: **PASSING** ✅
 - **References**:
   - [logrotate maxsize issue discussion](https://github.com/logrotate/logrotate/issues/578)
   - [Better Stack Community Guide](https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/)
@@ -207,7 +209,7 @@ dotnet test --logger "console;verbosity=detailed"
 - ✅ Not rotating when file is below size threshold (without force flag)
 - ✅ Combining size-based rotation with compression
 
-### ✅ DateBasedRotationTests (12 tests - 11 passing, 1 skipped)
+### ✅ DateBasedRotationTests (12 tests - ALL PASSING)
 - ✅ Daily rotation when last rotation over 1 day ago
 - ✅ Daily rotation NOT triggered when last rotation was today
 - ✅ Weekly rotation when last rotation over 1 week ago
@@ -219,14 +221,14 @@ dotnet test --logger "console;verbosity=detailed"
 - ✅ First run rotation when no state file exists (returns Unix epoch)
 - ✅ State file updated with current rotation date
 - ✅ minsize + daily requires BOTH conditions (AND logic)
-- ⏭️ maxsize + daily rotates when EITHER condition met (OR logic) - **SKIPPED: maxsize directive not implemented**
+- ✅ maxsize + daily rotates when EITHER condition met (OR logic)
 
 **Key Behaviors Tested**:
 - Date-based rotation relies on state file tracking
 - First run (no state entry) returns Unix epoch (1970-01-01), which triggers immediate rotation
 - State file stores dates in `yyyy-M-d` format
-- `minsize` works with time directives (both must be met)
-- `maxsize` directive parsing not implemented - test documents expected behavior
+- `minsize` works with time directives using AND logic (both conditions must be met)
+- `maxsize` works with time directives using OR logic (either condition triggers rotation)
 
 ## Future Test Implementation
 

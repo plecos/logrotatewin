@@ -520,7 +520,29 @@ namespace logrotate
                         }
                     }
 
-                    PrintDebug(split[0], lsize.ToString(), bDebug);
+                    PrintDebug(split[0], iminsize.ToString(), bDebug);
+                    break;
+                case "maxsize":
+                    // the size can be for following:  100, 100k, 100m, 100g
+                    string maxsize_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
+                    if (Char.IsNumber(maxsize_type, 0))
+                        imaxsize = Convert.ToInt64(split[1]);
+                    else
+                    {
+                        if (maxsize_type == "K")
+                            imaxsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
+                        else if (maxsize_type == "M")
+                            imaxsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
+                        else if (maxsize_type == "G")
+                            imaxsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
+                        else
+                        {
+                            Logging.Log(Strings.UnknownSizeType+" " + line, Logging.LogType.Error);
+                            return false;
+                        }
+                    }
+
+                    PrintDebug(split[0], imaxsize.ToString(), bDebug);
                     break;
                 case "shred":
                     bshred = true;
