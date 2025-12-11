@@ -524,6 +524,13 @@ namespace logrotate
                 return;
             }
 
+            // Execute preremove script before deleting the file
+            if (lrc.PreRemove != null)
+            {
+                Logging.Log("Running preremove script for " + m_filepath, Logging.LogType.Verbose);
+                CreateScriptandExecute(lrc.PreRemove, m_filepath);
+            }
+
             if (lrc.Shred)
             {
                 Logging.Log(Strings.ShreddingFile + " " + m_filepath, Logging.LogType.Verbose);

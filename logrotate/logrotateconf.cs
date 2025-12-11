@@ -63,6 +63,7 @@ namespace logrotate
         private List<string> sprerotate = null;
         private List<string> sfirstaction = null;
         private List<string> slastaction = null;
+        private List<string> spreremove = null;
         private int irotate = 0;
         private long lsize = 0;
         private bool bsharedscripts = false;
@@ -82,6 +83,7 @@ namespace logrotate
         private bool bprerotate = false;
         private bool bfirstaction = false;
         private bool blastaction = false;
+        private bool bpreremove = false;
 
         private int process_count = 0;
 
@@ -161,6 +163,10 @@ namespace logrotate
         public List<string> LastAction
         {
             get { return slastaction; }
+        }
+        public List<string> PreRemove
+        {
+            get { return spreremove; }
         }
 
         public string DateFormat
@@ -353,6 +359,7 @@ namespace logrotate
             sprerotate = m_source.sprerotate;
             sfirstaction = m_source.sfirstaction;
             slastaction = m_source.slastaction;
+            spreremove = m_source.spreremove;
             irotate = m_source.irotate;
             lsize = m_source.lsize;
             bsharedscripts = m_source.bsharedscripts;
@@ -390,11 +397,11 @@ namespace logrotate
 
             // if we are currently inside of a postrotate,prerotate,lastaction, or firstaction block
             // look for the endscript directive, otherwise add the line to the array for the appropriate block type
-            if ((bpostrotate == true) || (bprerotate == true) || (blastaction == true) || (bfirstaction == true))
+            if ((bpostrotate == true) || (bprerotate == true) || (blastaction == true) || (bfirstaction == true) || (bpreremove == true))
             {
                 if (split[0] == "endscript")
                 {
-                    bpostrotate = bprerotate = blastaction = bfirstaction = false;
+                    bpostrotate = bprerotate = blastaction = bfirstaction = bpreremove = false;
                 }
                 else
                 {
@@ -406,6 +413,8 @@ namespace logrotate
                         ParseLastAction(line);
                     if (bfirstaction)
                         ParseFirstAction(line);
+                    if (bpreremove)
+                        ParsePreRemove(line);
                 }
                 return true;
             }
@@ -636,6 +645,10 @@ namespace logrotate
                     blastaction = true;
                     PrintDebug(split[0], blastaction.ToString(), bDebug);
                     break;
+                case "preremove":
+                    bpreremove = true;
+                    PrintDebug(split[0], bpreremove.ToString(), bDebug);
+                    break;
                 
                 case "size":
                     // the size can be for following:  100, 100k, 100m, 100g
@@ -790,6 +803,14 @@ namespace logrotate
                 spostrotate = new List<string>();
 
             spostrotate.Add(line);
+        }
+
+        private void ParsePreRemove(string line)
+        {
+            if (spreremove == null)
+                spreremove = new List<string>();
+
+            spreremove.Add(line);
         }
 
         public void Clear_PreRotate()
