@@ -702,18 +702,18 @@ namespace logrotate
 
         private void ParseFirstAction(string line)
         {
-            if (slastaction == null)
-                slastaction = new List<string>();
-
-            slastaction.Add(line);
-        }
-
-        private void ParseLastAction(string line)
-        {
             if (sfirstaction == null)
                 sfirstaction = new List<string>();
 
             sfirstaction.Add(line);
+        }
+
+        private void ParseLastAction(string line)
+        {
+            if (slastaction == null)
+                slastaction = new List<string>();
+
+            slastaction.Add(line);
         }
 
         private void ParsePreRotate(string line)

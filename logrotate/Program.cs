@@ -1266,6 +1266,7 @@ namespace logrotate
             string[] lines = data1.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
             StringBuilder globalDirectives = new StringBuilder();
             StringBuilder filePaths = new StringBuilder();
+            bool inScriptBlock = false;
 
             foreach (string line in lines)
             {
@@ -1274,6 +1275,28 @@ namespace logrotate
                 // skip blank lines and comments
                 if (string.IsNullOrEmpty(trimmedLine) || trimmedLine[0] == '#')
                     continue;
+
+                // check for script block markers
+                if (trimmedLine == "firstaction" || trimmedLine == "lastaction" ||
+                    trimmedLine == "prerotate" || trimmedLine == "postrotate")
+                {
+                    inScriptBlock = true;
+                    globalDirectives.AppendLine(trimmedLine);
+                    continue;
+                }
+                if (trimmedLine == "endscript")
+                {
+                    inScriptBlock = false;
+                    globalDirectives.AppendLine(trimmedLine);
+                    continue;
+                }
+
+                // if we're in a script block, keep everything as global directives
+                if (inScriptBlock)
+                {
+                    globalDirectives.AppendLine(trimmedLine);
+                    continue;
+                }
 
                 // simple heuristic: if line contains path separators or quotes, it's likely a file path
                 // otherwise it's a directive
