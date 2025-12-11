@@ -407,7 +407,7 @@ namespace logrotate
             {
                 //if ((lrc.Daily == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
                 // fix for rotate not working as submitted by Matt Richardson 1/19/2015
-                if ((lrc.Daily == false) && (lrc.Weekly == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
+                if ((lrc.Hourly == false) && (lrc.Daily == false) && (lrc.Weekly == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
                 {
                     // this is a misconfiguration is we get here
                     Logging.Log(Strings.NoTimestampDirectives, Logging.LogType.Verbose);
@@ -418,6 +418,14 @@ namespace logrotate
                     // check last date of rotation
                     DateTime lastRotate = Status.GetRotationDate(logfilepath);
                     TimeSpan ts = DateTime.Now - lastRotate;
+                    if (lrc.Hourly)
+                    {
+                        // check to see if lastRotate is more than an hour old
+                        if (ts.TotalHours > 1)
+                        {
+                            bDoRotate = true;
+                        }
+                    }
                     if (lrc.Daily)
                     {
                         // check to see if lastRotate is more than a day old

@@ -36,6 +36,7 @@ namespace logrotate
         private bool bcopy = false;
         private bool bcopytruncate = false;
         private bool bcreate = false;
+        private bool bhourly = false;
         private bool bdaily = false;
         private bool bdateext = false;
         private string sdateformat = "-%Y%m%d";
@@ -202,6 +203,10 @@ namespace logrotate
             get { return imaxsize; }
         }
 
+        public bool Hourly
+        {
+            get { return bhourly; }
+        }
         public bool Daily
         {
             get { return bdaily; }
@@ -314,6 +319,7 @@ namespace logrotate
             bcopy = m_source.bcopy;
             bcopytruncate = m_source.bcopytruncate;
             bcreate = m_source.bcreate;
+            bhourly = m_source.bhourly;
             bdaily = m_source.bdaily;
             bdateext = m_source.bdateext;
             sdateformat = m_source.sdateformat;
@@ -423,6 +429,10 @@ namespace logrotate
                 case "nocreate":
                     bcreate = false;
                     PrintDebug(split[0], bcreate.ToString(), bDebug);
+                    break;
+                case "hourly":
+                    bhourly = true;
+                    PrintDebug(split[0], bhourly.ToString(), bDebug);
                     break;
                 case "daily":
                     bdaily = true;
