@@ -22,7 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 This is a port of the logrotate utility available for Linux. See the Wiki for more notes.
 
+**Feature Coverage**: Implements **91%** (63/69) of Linux logrotate directives, providing comprehensive log rotation functionality for Windows environments.
+
 Project homepage: <https://sourceforge.net/projects/logrotatewin/>
+GitHub repository: <https://github.com/ken-salter/logrotatewin>
 
 ## Requirements
 
@@ -30,9 +33,23 @@ Project homepage: <https://sourceforge.net/projects/logrotatewin/>
 
 ## Installation
 
-Run the setup.exe to install.
+### Chocolatey (Recommended)
 
-This installation will copy the executable, README.md, gnu_license.txt, and a sample .conf file to the folder you specify.
+The easiest way to install LogRotate for Windows is using Chocolatey:
+
+```powershell
+choco install logrotatewin
+```
+
+After installation, the `logrotate` command will be available in your PATH.
+
+### Manual Installation
+
+Download the latest release from the [GitHub Releases page](https://github.com/ken-salter/logrotatewin/releases) and extract to your desired location. The package includes:
+- `logrotate.exe` - Main executable
+- `README.md` - This documentation
+- `gnu_license.txt` - License information
+- Sample configuration files
 
 ## Building from Source
 
@@ -64,6 +81,39 @@ logrotate [options] <configfile>
 - `-v, --verbose` - Verbose output
 - `-s, --state <file>` - Use alternate state file
 - `-?, --usage, --help` - Show usage information
+
+### Configuration File Directives
+
+LogRotate for Windows supports 63 configuration directives (91% of Linux logrotate directives) plus 7 Windows-specific directives. Configuration files use the same syntax as Linux logrotate.
+
+**Example configuration:**
+```
+C:\logs\myapp\*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create
+    postrotate
+        echo "Logs rotated" >> C:\logs\rotation.log
+    endscript
+}
+```
+
+**Key directive categories:**
+- **Rotation scheduling**: `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `size`, `minsize`, `maxsize`
+- **Compression**: `compress`, `nocompress`, `delaycompress`, `compresscmd`, `compressoptions`
+- **File handling**: `create`, `copy`, `copytruncate`, `renamecopy`, `olddir`, `missingok`
+- **File naming**: `dateext`, `dateformat`, `dateyesterday`, `datehourago`, `extension`, `addextension`
+- **Cleanup**: `rotate`, `maxage`, `minage`, `shred`, `shredcycles`
+- **Scripts**: `prerotate`, `postrotate`, `firstaction`, `lastaction`, `preremove`, `sharedscripts`
+- **Mail**: `mail`, `mailfirst`, `maillast` (requires Windows-specific SMTP configuration)
+- **Configuration**: `include`, `tabooext`, `taboopat`
+- **Windows-specific**: `smtpserver`, `smtpport`, `smtpssl`, `smtpuser`, `smtpuserpwd`, `smtpfrom`
+
+For complete documentation, visit the GitHub repository: <https://github.com/ken-salter/logrotatewin>
 
 ### Exit Codes
 
@@ -107,7 +157,17 @@ if %ERRORLEVEL% EQU 0 (
 
 ## Release Notes
 
-### 0.0.0.20 - 10 Dec 2025
+### 0.0.0.20 - 12 Dec 2025
+- **Major Feature Update**: Expanded directive coverage from 74% to 91% (63/69 Linux directives)
+- **New Directives**: `dateyesterday`, `nodateyesterday`, `datehourago`, `nodatehourago`, `nodateext`
+- **New Directives**: `createolddir`, `nocreateolddir` - Control automatic olddir creation
+- **New Directives**: `renamecopy`, `norenamecopy` - Cross-device rotation support
+- **New Directives**: `nodelaycompress`, `nomissingok`, `minage`, `taboopat`, `ignoreduplicates`
+- **Bug Fix**: Extension directive file search pattern corrected for proper age-out
+- **Bug Fix**: Original file removal from search results improved for broader patterns
+- **Bug Fix**: Postrotate script execution timing fixed for renamecopy
+- **Testing**: Added 30+ comprehensive integration test files with 150+ test cases
+- **Documentation**: Added DIRECTIVE_COMPARISON.md, TESTING.md, EXIT-CODES.md
 - Standardized exit codes for better script integration
 - Fixed potential deadlock issues in script execution
 - Improved resource disposal with using statements
