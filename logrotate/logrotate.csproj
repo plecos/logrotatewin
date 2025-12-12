@@ -13,9 +13,7 @@
     <Company></Company>
     <Product>Logrotate</Product>
     <Copyright>Copyright © 2013-2025 Ken Salter</Copyright>
-    <Version>0.0.0.20</Version>
-    <FileVersion>0.0.0.20</FileVersion>
-    <AssemblyVersion>0.0.0.20</AssemblyVersion>
+    <!-- Version is now managed by Nerdbank.GitVersioning via version.json -->
 
     <!-- COM Settings -->
     <ComVisible>false</ComVisible>
