@@ -41,6 +41,8 @@ namespace logrotate
         private bool bdaily = false;
         private bool bdateext = false;
         private string sdateformat = "-%Y%m%d";
+        private bool bdateyesterday = false;
+        private bool bdatehourago = false;
         private bool bdelaycompress = false;
         private bool bifempty = true;
         private string smail = "";
@@ -150,6 +152,16 @@ namespace logrotate
         public bool DateExt
         {
             get { return bdateext; }
+        }
+
+        public bool DateYesterday
+        {
+            get { return bdateyesterday; }
+        }
+
+        public bool DateHourAgo
+        {
+            get { return bdatehourago; }
         }
 
         public List<string> PreRotate
@@ -370,6 +382,8 @@ namespace logrotate
             bdaily = m_source.bdaily;
             bdateext = m_source.bdateext;
             sdateformat = m_source.sdateformat;
+            bdateyesterday = m_source.bdateyesterday;
+            bdatehourago = m_source.bdatehourago;
             bdelaycompress = m_source.bdelaycompress;
             bifempty = m_source.bifempty;
             smail = m_source.smail;
@@ -764,6 +778,26 @@ namespace logrotate
                 case "dateext":
                     bdateext = true;
                     PrintDebug(split[0], bdateext.ToString(), bDebug);
+                    break;
+                case "nodateext":
+                    bdateext = false;
+                    PrintDebug(split[0], bdateext.ToString(), bDebug);
+                    break;
+                case "dateyesterday":
+                    bdateyesterday = true;
+                    PrintDebug(split[0], bdateyesterday.ToString(), bDebug);
+                    break;
+                case "nodateyesterday":
+                    bdateyesterday = false;
+                    PrintDebug(split[0], bdateyesterday.ToString(), bDebug);
+                    break;
+                case "datehourago":
+                    bdatehourago = true;
+                    PrintDebug(split[0], bdatehourago.ToString(), bDebug);
+                    break;
+                case "nodatehourago":
+                    bdatehourago = false;
+                    PrintDebug(split[0], bdatehourago.ToString(), bDebug);
                     break;
                 case "tabooext":
                     int taboo_start_idx = 2;
