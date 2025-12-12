@@ -228,7 +228,7 @@ namespace logrotate.Tests.Integration
 
                 // Assert - Should have compressed date-stamped file
                 string[] gzFiles = Directory.GetFiles(TestDir, "test.log-*.gz");
-                gzFiles.Should().HaveCountGreaterOrEqualTo(1, "should have at least one compressed dated file");
+                gzFiles.Should().HaveCountGreaterThanOrEqualTo(1, "should have at least one compressed dated file");
             }
             finally
             {
