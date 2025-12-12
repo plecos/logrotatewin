@@ -35,6 +35,7 @@ namespace logrotate
         private string scompressoptions = ""; // Default options for external compression
         private bool bcopy = false;
         private bool bcopytruncate = false;
+        private bool brenamecopy = false;
         private bool bcreate = false;
         private int iminutes = 0;
         private bool bhourly = false;
@@ -220,6 +221,11 @@ namespace logrotate
             get { return bcopytruncate; }
         }
 
+        public bool RenameCopy
+        {
+            get { return brenamecopy; }
+        }
+
         public bool Create
         {
             get { return bcreate; }
@@ -382,6 +388,7 @@ namespace logrotate
             scompressext = m_source.scompressext;
             bcopy = m_source.bcopy;
             bcopytruncate = m_source.bcopytruncate;
+            brenamecopy = m_source.brenamecopy;
             bcreate = m_source.bcreate;
             iminutes = m_source.iminutes;
             bhourly = m_source.bhourly;
@@ -499,6 +506,16 @@ namespace logrotate
                 case "nocopytruncate":
                     bcopytruncate = false;
                     PrintDebug(split[0], bcopytruncate.ToString(), bDebug);
+                    break;
+                case "renamecopy":
+                    brenamecopy = true;
+                    // renamecopy implies nocopytruncate
+                    bcopytruncate = false;
+                    PrintDebug(split[0], brenamecopy.ToString(), bDebug);
+                    break;
+                case "norenamecopy":
+                    brenamecopy = false;
+                    PrintDebug(split[0], brenamecopy.ToString(), bDebug);
                     break;
                 case "create":
                     bcreate = true;

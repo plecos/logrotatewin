@@ -1048,9 +1048,103 @@ namespace logrotate
             string rotate_name = GetRotateName(lrc, fi);
 
             bool bLogFileExists = fi.Exists;
+            bool bPostRotateAlreadyRun = false; // Track if postrotate was run for renamecopy
 
-            // now either rename or copy (depends on copy setting) 
-            if ((lrc.Copy) || (lrc.CopyTruncate))
+            // now either rename or copy (depends on copy/renamecopy setting)
+            if (lrc.RenameCopy)
+            {
+                // renamecopy: rename to temp file, run postrotate script, copy to final location, delete temp
+                string tempPath = fi.FullName + ".tmp";
+
+                Logging.Log(Strings.Renaming + " " + fi.FullName + " to temporary file " + tempPath, Logging.LogType.Verbose);
+
+                if (cla.Debug == false)
+                {
+                    try
+                    {
+                        if (bLogFileExists)
+                            File.Move(fi.FullName, tempPath);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log("Error renaming file " + fi.FullName + " to " + tempPath, Logging.LogType.Error);
+                        Logging.LogException(e);
+                        return;
+                    }
+                }
+
+                // Run postrotate script if specified (before copying to final location)
+                if ((lrc.PostRotate != null) && (lrc.SharedScripts == false))
+                {
+                    PostRotate(lrc, fi.FullName);
+                    bPostRotateAlreadyRun = true;
+                }
+
+                Logging.Log(Strings.Copying + " " + tempPath + Strings.To + rotate_path + rotate_name, Logging.LogType.Verbose);
+
+                if (cla.Debug == false)
+                {
+                    try
+                    {
+                        if (bLogFileExists)
+                            File.Copy(tempPath, rotate_path + rotate_name, false);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log("Error copying file " + tempPath + " to " + rotate_path + rotate_name, Logging.LogType.Error);
+                        Logging.LogException(e);
+                        return;
+                    }
+
+                    if (bLogFileExists)
+                    {
+                        File.SetCreationTime(rotate_path + rotate_name, DateTime.Now);
+                        File.SetLastAccessTime(rotate_path + rotate_name, DateTime.Now);
+                        File.SetLastWriteTime(rotate_path + rotate_name, DateTime.Now);
+                    }
+                }
+
+                Logging.Log("Removing temporary file " + tempPath, Logging.LogType.Verbose);
+
+                if (cla.Debug == false)
+                {
+                    try
+                    {
+                        if (bLogFileExists)
+                            File.Delete(tempPath);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log("Error deleting temporary file " + tempPath, Logging.LogType.Error);
+                        Logging.LogException(e);
+                        // Continue anyway - the main rotation succeeded
+                    }
+                }
+
+                if (lrc.Create)
+                {
+                    Logging.Log(Strings.CreateNewEmptyLogFile, Logging.LogType.Verbose);
+
+                    if (cla.Debug == false)
+                    {
+                        try
+                        {
+                            using (FileStream fs = new FileStream(fi.FullName, FileMode.CreateNew))
+                            {
+                                // just create the file
+                                fs.SetLength(0);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Logging.Log("Error creating new file " + fi.FullName, Logging.LogType.Error);
+                            Logging.LogException(e);
+                            return;
+                        }
+                    }
+                }
+            }
+            else if ((lrc.Copy) || (lrc.CopyTruncate))
             {
                 Logging.Log(Strings.Copying + " " + fi.FullName + Strings.To + rotate_path + rotate_name, Logging.LogType.Verbose);
 
@@ -1167,7 +1261,7 @@ namespace logrotate
                 Status.SetRotationDate(fi.FullName);
             }
 
-            if ((lrc.PostRotate != null) && (lrc.SharedScripts == false))
+            if ((lrc.PostRotate != null) && (lrc.SharedScripts == false) && !bPostRotateAlreadyRun)
                 PostRotate(lrc, fi.FullName);
         }
 
