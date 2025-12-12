@@ -440,6 +440,16 @@ namespace logrotate
             // Check notifempty BEFORE force flag - this is a content policy, not a timing constraint
             // The force flag should override timing checks but respect content-based directives
             //if (logfilepath.Length == 0)
+            if ((!fi.Exists) && (lrc.MissingOK == false)) {
+                Logging.Log(Strings.CouldNotBeFound + " - " + fi.FullName, Logging.LogType.Error);
+                return false;
+            }
+            else if ((!fi.Exists) && (lrc.MissingOK != false))
+            {
+                Logging.Log(Strings.CouldNotBeFound + " - " + fi.FullName, Logging.LogType.Debug);
+                return true;
+            }
+
             if (fi.Length == 0)
             {
                 if (lrc.IfEmpty == false)

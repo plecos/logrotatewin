@@ -24,7 +24,13 @@ namespace logrotate.Tests.Integration
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = _exePath;
-            psi.Arguments = string.Join(" ", args) + " --verbose";
+            psi.Arguments = string.Join(" ", args);
+
+            if (Debugger.IsAttached)
+            {
+                psi.Arguments += " --verbose";
+            }
+            
             psi.UseShellExecute = false;
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
