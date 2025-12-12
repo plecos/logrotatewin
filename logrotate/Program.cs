@@ -800,6 +800,20 @@ namespace logrotate
         private static string GetRotateName(logrotateconf lrc, FileInfo fi)
         {
             string rotate_name;
+            string baseName = fi.Name;
+            string fileExt = "";
+
+            // Handle extension directive - preserve original extension
+            if (!string.IsNullOrEmpty(lrc.Extension))
+            {
+                // Remove the specified extension from the base name
+                if (baseName.EndsWith(lrc.Extension))
+                {
+                    fileExt = lrc.Extension;
+                    baseName = baseName.Substring(0, baseName.Length - lrc.Extension.Length);
+                }
+            }
+
             if (lrc.DateExt)
             {
                 string time_str = lrc.DateFormat;
@@ -809,12 +823,25 @@ namespace logrotate
                 time_str = time_str.Replace("%H", DateTime.Now.Hour.ToString("D2"));
                 time_str = time_str.Replace("%M", DateTime.Now.Minute.ToString("D2"));
                 time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
-                rotate_name = fi.Name + time_str;
+                rotate_name = baseName + time_str;
             }
             else
             {
-                rotate_name = fi.Name + "." + lrc.Start;
+                rotate_name = baseName + "." + lrc.Start;
             }
+
+            // Add back the preserved extension
+            if (!string.IsNullOrEmpty(fileExt))
+            {
+                rotate_name += fileExt;
+            }
+
+            // Handle addextension directive - add extension after rotation suffix
+            if (!string.IsNullOrEmpty(lrc.AddExtension))
+            {
+                rotate_name += lrc.AddExtension;
+            }
+
             return rotate_name;
         }
 
@@ -827,7 +854,22 @@ namespace logrotate
         private static void AgeOutRotatedFiles(logrotateconf lrc, FileInfo fi, string rotate_path)
         {
             DirectoryInfo di = new DirectoryInfo(rotate_path);
-            FileInfo[] fis = di.GetFiles(fi.Name + "*");
+
+            // Determine the pattern for finding rotated files
+            // If extension directive is used, look for base name pattern (e.g., "app.*" for "app.log")
+            // Otherwise, use original pattern (e.g., "app.log*")
+            string searchPattern;
+            if (!string.IsNullOrEmpty(lrc.Extension) && fi.Name.EndsWith(lrc.Extension))
+            {
+                string baseName = fi.Name.Substring(0, fi.Name.Length - lrc.Extension.Length);
+                searchPattern = baseName + "*";
+            }
+            else
+            {
+                searchPattern = fi.Name + "*";
+            }
+
+            FileInfo[] fis = di.GetFiles(searchPattern);
             if (fis.Length == 0)
             {
                 // nothing to do
@@ -842,10 +884,30 @@ namespace logrotate
                 return new CaseInsensitiveComparer().Compare(b.Name, a.Name);
             });
             // if original file is in this list, remove it
-            if (fis[fis.Length - 1].Name == fi.Name)
+            // Note: When using extension directive with broader search pattern (e.g., "app*" instead of "app.log*"),
+            // the original file might not be at the end of the sorted array, so we need to search for it
+            int originalFileIndex = -1;
+            for (int i = 0; i < fis.Length; i++)
             {
-                // this is the original file, remove from this list
-                Array.Resize<FileInfo>(ref fis, fis.Length - 1);
+                if (fis[i].Name == fi.Name)
+                {
+                    originalFileIndex = i;
+                    break;
+                }
+            }
+            if (originalFileIndex >= 0)
+            {
+                // Remove the original file from the array
+                FileInfo[] newfis = new FileInfo[fis.Length - 1];
+                int newIndex = 0;
+                for (int i = 0; i < fis.Length; i++)
+                {
+                    if (i != originalFileIndex)
+                    {
+                        newfis[newIndex++] = fis[i];
+                    }
+                }
+                fis = newfis;
             }
             // go ahead and remove files that are too old by age
             foreach (FileInfo m_fi in fis)

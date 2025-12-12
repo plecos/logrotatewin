@@ -77,6 +77,8 @@ namespace logrotate
         private bool byearly = false;
         private bool bshred = false;
         private int ishredcycles = 3;
+        private string sextension = "";
+        private string saddextension = "";
         private bool bretry_logfileopen = false;
         private int inumretry_logfileopen = 0;
         private int inumms_retry_logfileopen = 1000;
@@ -255,6 +257,14 @@ namespace logrotate
         {
             get { return ishredcycles; }
         }
+        public string Extension
+        {
+            get { return sextension; }
+        }
+        public string AddExtension
+        {
+            get { return saddextension; }
+        }
         public bool MailLast
         {
             get { return bmaillast; }
@@ -388,6 +398,8 @@ namespace logrotate
             byearly = m_source.byearly;
             bshred = m_source.bshred;
             ishredcycles = m_source.ishredcycles;
+            sextension = m_source.sextension;
+            saddextension = m_source.saddextension;
             bmaillast = m_source.bmaillast;
             ssmtpserver = m_source.ssmtpserver;
             ismtpport = m_source.ismtpport;
@@ -657,6 +669,14 @@ namespace logrotate
                     break;
                 case "shredcycles":
                     ishredcycles = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "extension":
+                    sextension = split[1];
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "addextension":
+                    saddextension = split[1];
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "start":
