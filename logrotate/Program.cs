@@ -161,7 +161,7 @@ namespace logrotate
                                 FileInfo[] fis = di.GetFiles();
                                 foreach (FileInfo m_fi in fis)
                                 {
-                                    Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
+                                    Logging.Log(Strings.Processing + " " + Strings.File + " " + m_fi.FullName, Logging.LogType.Verbose);
 
                                     // Check ignoreduplicates
                                     if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(m_fi.FullName))
@@ -281,7 +281,8 @@ namespace logrotate
                     }
                     catch (Exception e)
                     {
-                        Logging.LogException(e);
+                        //Logging.LogException(e);
+                        throw;
                     }
                 }
                 // now run lastaction if needed
@@ -1068,8 +1069,8 @@ namespace logrotate
                     catch (Exception e)
                     {
                         Logging.Log("Error renaming file " + fi.FullName + " to " + tempPath, Logging.LogType.Error);
-                        Logging.LogException(e);
-                        return;
+                        //Logging.LogException(e);
+                        throw;
                     }
                 }
 
@@ -1092,8 +1093,8 @@ namespace logrotate
                     catch (Exception e)
                     {
                         Logging.Log("Error copying file " + tempPath + " to " + rotate_path + rotate_name, Logging.LogType.Error);
-                        Logging.LogException(e);
-                        return;
+                        //Logging.LogException(e);
+                        throw;
                     }
 
                     if (bLogFileExists)
@@ -1138,8 +1139,8 @@ namespace logrotate
                         catch (Exception e)
                         {
                             Logging.Log("Error creating new file " + fi.FullName, Logging.LogType.Error);
-                            Logging.LogException(e);
-                            return;
+                            //Logging.LogException(e);
+                            throw;
                         }
                     }
                 }
@@ -1158,8 +1159,8 @@ namespace logrotate
                     catch (Exception e)
                     {
                         Logging.Log("Error copying file " + fi.FullName + " to " + rotate_path + rotate_name, Logging.LogType.Error);
-                        Logging.LogException(e);
-                        return;
+                        //Logging.LogException(e);
+                        throw;
                     }
 
                     if (bLogFileExists)
@@ -1190,8 +1191,8 @@ namespace logrotate
                         catch (Exception e)
                         {
                             Logging.Log("Error truncating file " + fi.FullName, Logging.LogType.Error);
-                            Logging.LogException(e);
-                            return;
+                            //Logging.LogException(e);
+                            throw;
                         }
                     }
                 }
@@ -1211,8 +1212,8 @@ namespace logrotate
                     catch (Exception e)
                     {
                         Logging.Log("Error renaming file " + fi.FullName + " to " + rotate_path + rotate_name, Logging.LogType.Error);
-                        Logging.LogException(e);
-                        return;
+                        //Logging.LogException(e);
+                        throw;
                     }
                 }
 
@@ -1233,8 +1234,8 @@ namespace logrotate
                         catch (Exception e)
                         {
                             Logging.Log("Error creating new file " + fi.FullName, Logging.LogType.Error);
-                            Logging.LogException(e);
-                            return;
+                            //Logging.LogException(e);
+                            throw;
                         }
                     }
                 }
@@ -1280,7 +1281,7 @@ namespace logrotate
             }
 
             string compressed_file_path = m_filepath + "." + lrc.CompressExt;
-            Logging.Log(Strings.Compressing + " " + m_filepath, Logging.LogType.Verbose);
+            Logging.Log(Strings.Compressing + " " + m_filepath + " to " + compressed_file_path, Logging.LogType.Verbose);
 
             if (cla.Debug == false)
             {
@@ -1299,12 +1300,14 @@ namespace logrotate
                     }
 
                     DeleteRotateFile(m_filepath, lrc);
+
+
                 }
                 catch (Exception e)
                 {
                     Logging.Log("Error in CompressRotatedFile with file " + m_filepath, Logging.LogType.Error);
-                    Logging.LogException(e);
-                    return;
+                    //Logging.LogException(e);
+                    throw;
                 }
             }
         }

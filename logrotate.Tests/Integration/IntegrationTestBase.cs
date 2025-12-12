@@ -24,15 +24,47 @@ namespace logrotate.Tests.Integration
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             psi.FileName = _exePath;
-            psi.Arguments = string.Join(" ", args);
+            psi.Arguments = string.Join(" ", args) + " --verbose";
             psi.UseShellExecute = false;
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
             psi.CreateNoWindow = true;
 
-            using (Process process = Process.Start(psi))
+
+            using (Process process = new Process())
             {
+                process.StartInfo = psi;
+
+                process.EnableRaisingEvents = true;
+
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        // Write the line to your debug output immediately
+                        System.Diagnostics.Debug.WriteLine($"[OUTPUT]: {e.Data}");
+                    }
+                };
+
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        // Write the line to your debug output immediately
+                        System.Diagnostics.Debug.WriteLine($"[ERROR]: {e.Data}");
+                    }
+                };
+
+                process.Start();
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
                 process.WaitForExit();
+
+                process.CancelOutputRead();
+                process.CancelErrorRead();
+
                 return process.ExitCode;
             }
         }

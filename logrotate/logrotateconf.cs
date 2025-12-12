@@ -28,10 +28,10 @@ namespace logrotate
         #endregion
 
         #region Private variables
-        private bool bgzipcompress = true;
+        private bool bgzipcompress = false;
         private string scompresscmd = ""; // Empty = use built-in GZipStream
         private string suncompresscmd = ""; // Empty = use built-in GZipStream
-        private string scompressext;
+        private string scompressext = sgzipdefaultcompressext;
         private string scompressoptions = ""; // Default options for external compression
         private bool bcopy = false;
         private bool bcopytruncate = false;
