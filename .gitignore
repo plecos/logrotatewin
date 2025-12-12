@@ -196,3 +196,6 @@ chocolatey/tools/*.exe
 chocolatey/tools/*.config
 chocolatey/tools/Content/
 chocolatey/*.nupkg
+
+# Nerdbank.GitVersioning
+version.txt

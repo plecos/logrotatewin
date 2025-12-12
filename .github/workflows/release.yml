@@ -27,12 +27,17 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    - name: Get version from csproj
+    - name: Install Nerdbank.GitVersioning tool
+      run: dotnet tool install --global nbgv
+      shell: pwsh
+
+    - name: Get version from Nerdbank.GitVersioning
       id: version
       run: |
-        [xml]$csproj = Get-Content "logrotate\logrotate.csproj"
-        $version = $csproj.Project.PropertyGroup.Version
-        Write-Host "Version: $version"
+        $versionJson = nbgv get-version -f json | ConvertFrom-Json
+        $version = $versionJson.SimpleVersion
+        Write-Host "Version detected by NBGv: $version"
+        Write-Host "Commit height: $($versionJson.VersionHeight)"
         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
         echo "TAG=v$version" >> $env:GITHUB_OUTPUT
       shell: pwsh
