@@ -816,13 +816,27 @@ namespace logrotate
 
             if (lrc.DateExt)
             {
+                // Determine which timestamp to use based on directives
+                DateTime timestamp = DateTime.Now;
+
+                if (lrc.DateYesterday)
+                {
+                    // Use yesterday's date
+                    timestamp = DateTime.Now.AddDays(-1);
+                }
+                else if (lrc.DateHourAgo)
+                {
+                    // Use timestamp from one hour ago
+                    timestamp = DateTime.Now.AddHours(-1);
+                }
+
                 string time_str = lrc.DateFormat;
-                time_str = time_str.Replace("%Y", DateTime.Now.Year.ToString());
-                time_str = time_str.Replace("%m", DateTime.Now.Month.ToString("D2"));
-                time_str = time_str.Replace("%d", DateTime.Now.Day.ToString("D2"));
-                time_str = time_str.Replace("%H", DateTime.Now.Hour.ToString("D2"));
-                time_str = time_str.Replace("%M", DateTime.Now.Minute.ToString("D2"));
-                time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
+                time_str = time_str.Replace("%Y", timestamp.Year.ToString());
+                time_str = time_str.Replace("%m", timestamp.Month.ToString("D2"));
+                time_str = time_str.Replace("%d", timestamp.Day.ToString("D2"));
+                time_str = time_str.Replace("%H", timestamp.Hour.ToString("D2"));
+                time_str = time_str.Replace("%M", timestamp.Minute.ToString("D2"));
+                time_str = time_str.Replace("%s", ((double)(timestamp.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
                 rotate_name = baseName + time_str;
             }
             else
