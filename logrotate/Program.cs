@@ -47,6 +47,9 @@ namespace logrotate
         // this is a list of file paths and the associated Config section
         private static readonly Dictionary<string, logrotateconf> FilePathConfigSection = new Dictionary<string, logrotateconf>();
 
+        // this is a set to track file paths that have already been added (for ignoreduplicates)
+        private static readonly HashSet<string> ProcessedFilePaths = new HashSet<string>();
+
         // this object provides management of the Status file
         private static logrotatestatus Status = null;
 
@@ -126,11 +129,26 @@ namespace logrotate
                         // if kvp.Key is a single file, then process
                         if ((File.Exists(kvp.Key) == true) || ((File.Exists(kvp.Key) == false) && (kvp.Key.Contains("?") == false) && (kvp.Key.Contains("*") == false)))
                         {
-                            Logging.Log(Strings.RotatingFile + " " + kvp.Key, Logging.LogType.Debug);
-                            if (CheckForRotate(kvp.Key, kvp.Value))
+                            // Check ignoreduplicates - skip if file already processed
+                            if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(kvp.Key))
                             {
-                                Logging.Log(Strings.AddingFileToRotate + " " + kvp.Key, Logging.LogType.Debug);
-                                m_rotatefis.Add(new FileInfo(kvp.Key));
+                                Logging.Log("Ignoring duplicate file path: " + kvp.Key, Logging.LogType.Verbose);
+                            }
+                            else
+                            {
+                                Logging.Log(Strings.RotatingFile + " " + kvp.Key, Logging.LogType.Debug);
+
+                                // Mark as processed if ignoreduplicates is enabled
+                                if (kvp.Value.IgnoreDuplicates)
+                                {
+                                    ProcessedFilePaths.Add(kvp.Key);
+                                }
+
+                                if (CheckForRotate(kvp.Key, kvp.Value))
+                                {
+                                    Logging.Log(Strings.AddingFileToRotate + " " + kvp.Key, Logging.LogType.Debug);
+                                    m_rotatefis.Add(new FileInfo(kvp.Key));
+                                }
                             }
                         }
                         else
@@ -144,9 +162,24 @@ namespace logrotate
                                 foreach (FileInfo m_fi in fis)
                                 {
                                     Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
-                                    if (CheckForRotate(m_fi.FullName, kvp.Value))
+
+                                    // Check ignoreduplicates
+                                    if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(m_fi.FullName))
                                     {
-                                        m_rotatefis.Add(m_fi);
+                                        Logging.Log("Ignoring duplicate file path: " + m_fi.FullName, Logging.LogType.Verbose);
+                                    }
+                                    else
+                                    {
+                                        // Mark as processed if ignoreduplicates is enabled
+                                        if (kvp.Value.IgnoreDuplicates)
+                                        {
+                                            ProcessedFilePaths.Add(m_fi.FullName);
+                                        }
+
+                                        if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                        {
+                                            m_rotatefis.Add(m_fi);
+                                        }
                                     }
                                 }
                             }
@@ -204,9 +237,24 @@ namespace logrotate
                                     foreach (FileInfo m_fi in fis)
                                     {
                                         Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
-                                        if (CheckForRotate(m_fi.FullName, kvp.Value))
+
+                                        // Check ignoreduplicates
+                                        if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(m_fi.FullName))
                                         {
-                                            m_rotatefis.Add(m_fi);
+                                            Logging.Log("Ignoring duplicate file path: " + m_fi.FullName, Logging.LogType.Verbose);
+                                        }
+                                        else
+                                        {
+                                            // Mark as processed if ignoreduplicates is enabled
+                                            if (kvp.Value.IgnoreDuplicates)
+                                            {
+                                                ProcessedFilePaths.Add(m_fi.FullName);
+                                            }
+
+                                            if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                            {
+                                                m_rotatefis.Add(m_fi);
+                                            }
                                         }
                                     }
                                 }
@@ -278,6 +326,8 @@ namespace logrotate
                 foreach (FileInfo m_fi in m_fis)
                 {
                     bool bFound = false;
+
+                    // Check tabooext (file extensions)
                     for (int i = 0; i < GlobalConfig.TabooList.Length; i++)
                     {
                         if (m_fi.Extension == GlobalConfig.TabooList[i])
@@ -287,6 +337,25 @@ namespace logrotate
                             break;
                         }
                     }
+
+                    // Check taboopat (glob patterns)
+                    if (!bFound && GlobalConfig.TabooPatList != null)
+                    {
+                        for (int i = 0; i < GlobalConfig.TabooPatList.Length; i++)
+                        {
+                            // Convert glob pattern to regex for matching
+                            string pattern = "^" + Regex.Escape(GlobalConfig.TabooPatList[i])
+                                .Replace("\\*", ".*")
+                                .Replace("\\?", ".") + "$";
+                            if (Regex.IsMatch(m_fi.Name, pattern))
+                            {
+                                Logging.Log(Strings.Skipping + " " + m_fi.FullName + " - matches taboopat pattern: " + GlobalConfig.TabooPatList[i], Logging.LogType.Verbose);
+                                bFound = true;
+                                break;
+                            }
+                        }
+                    }
+
                     if (!bFound)
                     {
                         Logging.Log(Strings.ProcessInclude + " " + m_fi.FullName, Logging.LogType.Verbose);
@@ -355,6 +424,17 @@ namespace logrotate
             }
 
             FileInfo fi = new FileInfo(logfilepath);
+
+            // Check minage - don't rotate if file is younger than specified days
+            if (lrc.MinAge > 0)
+            {
+                TimeSpan fileAge = DateTime.Now - fi.LastWriteTime;
+                if (fileAge.TotalDays < lrc.MinAge)
+                {
+                    Logging.Log($"File is younger than minage ({lrc.MinAge} days) - Skipping", Logging.LogType.Verbose);
+                    return false;
+                }
+            }
 
             // Check notifempty BEFORE force flag - this is a content policy, not a timing constraint
             // The force flag should override timing checks but respect content-based directives

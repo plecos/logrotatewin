@@ -54,7 +54,9 @@ namespace logrotate
         private long iminsize = 0;
         private long imaxsize = 0;
         private int imaxage = 0;
+        private int iminage = 0;
         private bool bmissingok = false;
+        private bool bignoreduplicates = false;
         private bool bmonthly = false;
         private int imonthday = 0; // 0 = not specified, 1-31 = specific day
         private bool bmaillast = true;
@@ -69,6 +71,7 @@ namespace logrotate
         private bool bsharedscripts = false;
         private int istart = 1;
         private string[] stabooext = { ".swp" };
+        private string[] staboopat = null;
         private bool bweekly = false;
         private int iweekday = -1; // -1 = not specified, 0-6 = Sunday-Saturday
         private bool byearly = false;
@@ -289,6 +292,14 @@ namespace logrotate
         {
             get { return imaxage; }
         }
+        public int MinAge
+        {
+            get { return iminage; }
+        }
+        public bool IgnoreDuplicates
+        {
+            get { return bignoreduplicates; }
+        }
         public bool SharedScripts
         {
             get { return bsharedscripts; }
@@ -304,6 +315,10 @@ namespace logrotate
         public string[] TabooList
         {
             get { return stabooext; }
+        }
+        public string[] TabooPatList
+        {
+            get { return staboopat; }
         }
         public bool LogFileOpen_Retry
         {
@@ -351,7 +366,9 @@ namespace logrotate
             iminsize = m_source.iminsize;
             imaxsize = m_source.imaxsize;
             imaxage = m_source.imaxage;
+            iminage = m_source.iminage;
             bmissingok = m_source.bmissingok;
+            bignoreduplicates = m_source.bignoreduplicates;
             bmonthly = m_source.bmonthly;
             imonthday = m_source.imonthday;
             solddir = m_source.solddir;
@@ -365,6 +382,7 @@ namespace logrotate
             bsharedscripts = m_source.bsharedscripts;
             istart = m_source.istart;
             stabooext = m_source.stabooext;
+            staboopat = m_source.staboopat;
             bweekly = m_source.bweekly;
             iweekday = m_source.iweekday;
             byearly = m_source.byearly;
@@ -485,6 +503,14 @@ namespace logrotate
                     bmissingok = true;
                     PrintDebug(split[0], bmissingok.ToString(), bDebug);
                     break;
+                case "nomissingok":
+                    bmissingok = false;
+                    PrintDebug(split[0], bmissingok.ToString(), bDebug);
+                    break;
+                case "ignoreduplicates":
+                    bignoreduplicates = true;
+                    PrintDebug(split[0], bignoreduplicates.ToString(), bDebug);
+                    break;
                 case "monthly":
                     bmonthly = true;
                     // Optional parameter: specific day of month (1-31)
@@ -555,6 +581,10 @@ namespace logrotate
                     break;
                 case "maxage":
                     imaxage = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "minage":
+                    iminage = Convert.ToInt32(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "olddir":
@@ -722,6 +752,23 @@ namespace logrotate
                     {
                         Array.Resize<string>(ref stabooext, stabooext.Length + 1);
                         stabooext[stabooext.Length - 1] = split[j];
+                    }
+                    break;
+                case "taboopat":
+                    int taboopat_start_idx = 2;
+                    if (split[1] != "+")
+                    {
+                        taboopat_start_idx = 1;
+                        staboopat = new string[0];
+                    }
+                    else if (staboopat == null)
+                    {
+                        staboopat = new string[0];
+                    }
+                    for (int j = taboopat_start_idx; j < split.Length; j++)
+                    {
+                        Array.Resize<string>(ref staboopat, staboopat.Length + 1);
+                        staboopat[staboopat.Length - 1] = split[j];
                     }
                     break;
                 case "include":
