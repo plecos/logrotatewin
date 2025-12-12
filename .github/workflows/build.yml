@@ -23,11 +23,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build Debug
-      run: dotnet build --configuration Debug --no-restore
-
     - name: Build Release
       run: dotnet build --configuration Release --no-restore
+
+    - name: Run Tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
 
     - name: Test executable
       run: |
