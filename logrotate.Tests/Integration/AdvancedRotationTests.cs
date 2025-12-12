@@ -74,7 +74,7 @@ namespace logrotate.Tests.Integration
 
                 // Original should be truncated (empty or very small)
                 var originalFileInfo = new FileInfo(logFile);
-                originalFileInfo.Length.Should().BeLessOrEqualTo(originalContent.Length,
+                originalFileInfo.Length.Should().BeLessThanOrEqualTo(originalContent.Length,
                     "original file should be truncated");
             }
             finally
