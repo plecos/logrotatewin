@@ -1573,7 +1573,25 @@ namespace logrotate
                             }
 
                             lrc.Increment_ProcessCount();
-                            FilePathConfigSection.Add(split, lrc);
+
+                            // Check if key already exists - if ignoreduplicates is set, skip duplicate patterns
+                            if (FilePathConfigSection.ContainsKey(split))
+                            {
+                                if (lrc.IgnoreDuplicates)
+                                {
+                                    Logging.Log("Ignoring duplicate config section for pattern: " + split, Logging.LogType.Verbose);
+                                }
+                                else
+                                {
+                                    // If ignoreduplicates is not set, we still can't add duplicate keys to Dictionary
+                                    // Log a warning but don't throw an exception
+                                    Logging.Log("Warning: Duplicate config section for pattern '" + split + "' - using first occurrence", Logging.LogType.Warning);
+                                }
+                            }
+                            else
+                            {
+                                FilePathConfigSection.Add(split, lrc);
+                            }
                             split = "";
                         }
                         else
