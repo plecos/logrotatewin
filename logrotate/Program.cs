@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Net.Mail;
 using System.Text.RegularExpressions;
 using System.Collections;
+using System.Threading.Tasks;
 
 /*
     LogRotate - rotates, compresses, and mails system logs
@@ -30,6 +31,13 @@ namespace logrotate
 {
     class Program
     {
+        // Exit codes
+        internal const int EXIT_SUCCESS = 0;              // Successful execution
+        internal const int EXIT_GENERAL_ERROR = 1;        // General error (config, runtime errors)
+        internal const int EXIT_INVALID_ARGUMENTS = 2;    // Invalid command line arguments
+        internal const int EXIT_CONFIG_ERROR = 3;         // Configuration file error
+        internal const int EXIT_NO_FILES_TO_ROTATE = 4;   // No files found to rotate
+
         // this object will parse the command line args
         private static CmdLineArgs cla = null;
 
@@ -38,6 +46,9 @@ namespace logrotate
 
         // this is a list of file paths and the associated Config section
         private static readonly Dictionary<string, logrotateconf> FilePathConfigSection = new Dictionary<string, logrotateconf>();
+
+        // this is a set to track file paths that have already been added (for ignoreduplicates)
+        private static readonly HashSet<string> ProcessedFilePaths = new HashSet<string>();
 
         // this object provides management of the Status file
         private static logrotatestatus Status = null;
@@ -51,14 +62,14 @@ namespace logrotate
                 {
                     PrintVersion();
                     PrintUsage();
-                    Environment.Exit(0);
+                    Environment.Exit(EXIT_SUCCESS);
                 }
 
                 cla = new CmdLineArgs(args);
                 if (cla.Usage)
                 {
                     PrintUsage();
-                    Environment.Exit(0);
+                    Environment.Exit(EXIT_SUCCESS);
                 }
 
                 Status = new logrotatestatus(cla.AlternateStateFile);
@@ -88,7 +99,7 @@ namespace logrotate
                 if (FilePathConfigSection.Count == 0)
                 {
                     Logging.Log(Strings.NoFoldersFound + " " + Strings.Section, Logging.LogType.Error);
-                    Environment.Exit(-1);
+                    Environment.Exit(EXIT_NO_FILES_TO_ROTATE);
                 }
                 else
                 {
@@ -118,11 +129,26 @@ namespace logrotate
                         // if kvp.Key is a single file, then process
                         if ((File.Exists(kvp.Key) == true) || ((File.Exists(kvp.Key) == false) && (kvp.Key.Contains("?") == false) && (kvp.Key.Contains("*") == false)))
                         {
-                            Logging.Log(Strings.RotatingFile + " " + kvp.Key, Logging.LogType.Debug);
-                            if (CheckForRotate(kvp.Key, kvp.Value))
+                            // Check ignoreduplicates - skip if file already processed
+                            if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(kvp.Key))
                             {
-                                Logging.Log(Strings.AddingFileToRotate + " " + kvp.Key, Logging.LogType.Debug);
-                                m_rotatefis.Add(new FileInfo(kvp.Key));
+                                Logging.Log("Ignoring duplicate file path: " + kvp.Key, Logging.LogType.Verbose);
+                            }
+                            else
+                            {
+                                Logging.Log(Strings.RotatingFile + " " + kvp.Key, Logging.LogType.Debug);
+
+                                // Mark as processed if ignoreduplicates is enabled
+                                if (kvp.Value.IgnoreDuplicates)
+                                {
+                                    ProcessedFilePaths.Add(kvp.Key);
+                                }
+
+                                if (CheckForRotate(kvp.Key, kvp.Value))
+                                {
+                                    Logging.Log(Strings.AddingFileToRotate + " " + kvp.Key, Logging.LogType.Debug);
+                                    m_rotatefis.Add(new FileInfo(kvp.Key));
+                                }
                             }
                         }
                         else
@@ -135,10 +161,25 @@ namespace logrotate
                                 FileInfo[] fis = di.GetFiles();
                                 foreach (FileInfo m_fi in fis)
                                 {
-                                    Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
-                                    if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                    Logging.Log(Strings.Processing + " " + Strings.File + " " + m_fi.FullName, Logging.LogType.Verbose);
+
+                                    // Check ignoreduplicates
+                                    if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(m_fi.FullName))
                                     {
-                                        m_rotatefis.Add(m_fi);
+                                        Logging.Log("Ignoring duplicate file path: " + m_fi.FullName, Logging.LogType.Verbose);
+                                    }
+                                    else
+                                    {
+                                        // Mark as processed if ignoreduplicates is enabled
+                                        if (kvp.Value.IgnoreDuplicates)
+                                        {
+                                            ProcessedFilePaths.Add(m_fi.FullName);
+                                        }
+
+                                        if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                        {
+                                            m_rotatefis.Add(m_fi);
+                                        }
                                     }
                                 }
                             }
@@ -196,9 +237,24 @@ namespace logrotate
                                     foreach (FileInfo m_fi in fis)
                                     {
                                         Logging.Log(Strings.Processing + " " + Strings.File + m_fi.FullName, Logging.LogType.Verbose);
-                                        if (CheckForRotate(m_fi.FullName, kvp.Value))
+
+                                        // Check ignoreduplicates
+                                        if (kvp.Value.IgnoreDuplicates && ProcessedFilePaths.Contains(m_fi.FullName))
                                         {
-                                            m_rotatefis.Add(m_fi);
+                                            Logging.Log("Ignoring duplicate file path: " + m_fi.FullName, Logging.LogType.Verbose);
+                                        }
+                                        else
+                                        {
+                                            // Mark as processed if ignoreduplicates is enabled
+                                            if (kvp.Value.IgnoreDuplicates)
+                                            {
+                                                ProcessedFilePaths.Add(m_fi.FullName);
+                                            }
+
+                                            if (CheckForRotate(m_fi.FullName, kvp.Value))
+                                            {
+                                                m_rotatefis.Add(m_fi);
+                                            }
                                         }
                                     }
                                 }
@@ -223,9 +279,10 @@ namespace logrotate
                             }
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        Logging.LogException(e);
+                        //Logging.LogException(e);
+                        throw;
                     }
                 }
                 // now run lastaction if needed
@@ -238,17 +295,17 @@ namespace logrotate
             catch (Exception e)
             {
                 Logging.LogException(e);
-                Environment.Exit(1);
+                Environment.Exit(EXIT_GENERAL_ERROR);
             }
         }
 
-        private void RecursiveParseFolders(string sfolder, string pattern, ref List<string> dirs)
-        {
-            foreach (string dir in Directory.GetDirectories(sfolder, pattern))
-            {
+        // private void RecursiveParseFolders(string sfolder, string pattern, ref List<string> dirs)
+        // {
+        //     foreach (string dir in Directory.GetDirectories(sfolder, pattern))
+        //     {
 
-            }
-        }
+        //     }
+        // }
 
 
         /// <summary>
@@ -270,6 +327,8 @@ namespace logrotate
                 foreach (FileInfo m_fi in m_fis)
                 {
                     bool bFound = false;
+
+                    // Check tabooext (file extensions)
                     for (int i = 0; i < GlobalConfig.TabooList.Length; i++)
                     {
                         if (m_fi.Extension == GlobalConfig.TabooList[i])
@@ -279,6 +338,25 @@ namespace logrotate
                             break;
                         }
                     }
+
+                    // Check taboopat (glob patterns)
+                    if (!bFound && GlobalConfig.TabooPatList != null)
+                    {
+                        for (int i = 0; i < GlobalConfig.TabooPatList.Length; i++)
+                        {
+                            // Convert glob pattern to regex for matching
+                            string pattern = "^" + Regex.Escape(GlobalConfig.TabooPatList[i])
+                                .Replace("\\*", ".*")
+                                .Replace("\\?", ".") + "$";
+                            if (Regex.IsMatch(m_fi.Name, pattern))
+                            {
+                                Logging.Log(Strings.Skipping + " " + m_fi.FullName + " - matches taboopat pattern: " + GlobalConfig.TabooPatList[i], Logging.LogType.Verbose);
+                                bFound = true;
+                                break;
+                            }
+                        }
+                    }
+
                     if (!bFound)
                     {
                         Logging.Log(Strings.ProcessInclude + " " + m_fi.FullName, Logging.LogType.Verbose);
@@ -310,7 +388,7 @@ namespace logrotate
                     else
                     {
                         Logging.Log(GlobalConfig.Include + " " + Strings.CouldNotBeFound, Logging.LogType.Error);
-                        Environment.Exit(1);
+                        Environment.Exit(EXIT_CONFIG_ERROR);
                     }
                 }
             }
@@ -334,14 +412,8 @@ namespace logrotate
         /// <returns>True if need to rotate, False if not</returns>
         private static bool CheckForRotate(string logfilepath, logrotateconf lrc)
         {
-
-            if (cla.Force)
-            {
-                Logging.Log(Strings.ForceOptionRotate, Logging.LogType.Verbose);
-                return true;
-            }
-
             bool bDoRotate = false;
+
             // first check if file exists.  if it doesn't error out unless we are set not to
             if (File.Exists(logfilepath) == false)
             {
@@ -354,7 +426,30 @@ namespace logrotate
 
             FileInfo fi = new FileInfo(logfilepath);
 
+            // Check minage - don't rotate if file is younger than specified days
+            if (lrc.MinAge > 0)
+            {
+                TimeSpan fileAge = DateTime.Now - fi.LastWriteTime;
+                if (fileAge.TotalDays < lrc.MinAge)
+                {
+                    Logging.Log($"File is younger than minage ({lrc.MinAge} days) - Skipping", Logging.LogType.Verbose);
+                    return false;
+                }
+            }
+
+            // Check notifempty BEFORE force flag - this is a content policy, not a timing constraint
+            // The force flag should override timing checks but respect content-based directives
             //if (logfilepath.Length == 0)
+            if ((!fi.Exists) && (lrc.MissingOK == false)) {
+                Logging.Log(Strings.CouldNotBeFound + " - " + fi.FullName, Logging.LogType.Error);
+                return false;
+            }
+            else if ((!fi.Exists) && (lrc.MissingOK != false))
+            {
+                Logging.Log(Strings.CouldNotBeFound + " - " + fi.FullName, Logging.LogType.Debug);
+                return true;
+            }
+
             if (fi.Length == 0)
             {
                 if (lrc.IfEmpty == false)
@@ -362,6 +457,13 @@ namespace logrotate
                     Logging.Log(Strings.LogFileEmpty + " - " + Strings.Skipping, Logging.LogType.Verbose);
                     return false;
                 }
+            }
+
+            // Force flag overrides timing constraints but respects content policies like notifempty
+            if (cla.Force)
+            {
+                Logging.Log(Strings.ForceOptionRotate, Logging.LogType.Verbose);
+                return true;
             }
 
             // determine if we need to rotate the file.  this can be based on a number of criteria, including size, date, etc.
@@ -379,7 +481,7 @@ namespace logrotate
                 if (fi.Length >= lrc.MaxSize)
                 {
                     Logging.Log(Strings.RotateWhenMaximumFileSize, Logging.LogType.Verbose);
-                    
+
                     return true;
                 }
             }
@@ -396,7 +498,7 @@ namespace logrotate
             {
                 //if ((lrc.Daily == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
                 // fix for rotate not working as submitted by Matt Richardson 1/19/2015
-                if ((lrc.Daily == false) && (lrc.Weekly == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
+                if ((lrc.Minutes == 0) && (lrc.Hourly == false) && (lrc.Daily == false) && (lrc.Weekly == false) && (lrc.Monthly == false) && (lrc.Yearly == false))
                 {
                     // this is a misconfiguration is we get here
                     Logging.Log(Strings.NoTimestampDirectives, Logging.LogType.Verbose);
@@ -407,6 +509,22 @@ namespace logrotate
                     // check last date of rotation
                     DateTime lastRotate = Status.GetRotationDate(logfilepath);
                     TimeSpan ts = DateTime.Now - lastRotate;
+                    if (lrc.Minutes > 0)
+                    {
+                        // check to see if lastRotate is older than specified minutes
+                        if (ts.TotalMinutes > lrc.Minutes)
+                        {
+                            bDoRotate = true;
+                        }
+                    }
+                    if (lrc.Hourly)
+                    {
+                        // check to see if lastRotate is more than an hour old
+                        if (ts.TotalHours > 1)
+                        {
+                            bDoRotate = true;
+                        }
+                    }
                     if (lrc.Daily)
                     {
                         // check to see if lastRotate is more than a day old
@@ -422,6 +540,15 @@ namespace logrotate
                         {
                             bDoRotate = true;
                         }
+                        else if (lrc.Weekday >= 0)
+                        {
+                            // Specific weekday specified (0-6, Sunday=0)
+                            // Rotate if current day matches the specified weekday and it's been at least a day since last rotation
+                            if ((int)DateTime.Now.DayOfWeek == lrc.Weekday && ts.TotalDays >= 1)
+                            {
+                                bDoRotate = true;
+                            }
+                        }
                         else if (DateTime.Now.DayOfWeek < lastRotate.DayOfWeek)
                         {
                             bDoRotate = true;
@@ -429,10 +556,22 @@ namespace logrotate
                     }
                     if (lrc.Monthly)
                     {
-                        // check if the month is different
-                        if ((lastRotate.Year != DateTime.Now.Year) || ((lastRotate.Year == DateTime.Now.Year) && (lastRotate.Month != DateTime.Now.Month)))
+                        if (lrc.MonthDay > 0)
                         {
-                            bDoRotate = true;
+                            // Specific day of month specified (1-31)
+                            // Rotate if current day matches the specified monthday and it's been at least a day since last rotation
+                            if (DateTime.Now.Day == lrc.MonthDay && ts.TotalDays >= 1)
+                            {
+                                bDoRotate = true;
+                            }
+                        }
+                        else
+                        {
+                            // check if the month is different
+                            if ((lastRotate.Year != DateTime.Now.Year) || ((lastRotate.Year == DateTime.Now.Year) && (lastRotate.Month != DateTime.Now.Month)))
+                            {
+                                bDoRotate = true;
+                            }
                         }
                     }
                     if (lrc.Yearly)
@@ -476,6 +615,13 @@ namespace logrotate
                 return;
             }
 
+            // Execute preremove script before deleting the file
+            if (lrc.PreRemove != null)
+            {
+                Logging.Log("Running preremove script for " + m_filepath, Logging.LogType.Verbose);
+                CreateScriptandExecute(lrc.PreRemove, m_filepath);
+            }
+
             if (lrc.Shred)
             {
                 Logging.Log(Strings.ShreddingFile + " " + m_filepath, Logging.LogType.Verbose);
@@ -515,14 +661,13 @@ namespace logrotate
             Logging.Log("Script file path: " + temp_path, Logging.LogType.Debug);
             try
             {
-                StreamWriter sw = new StreamWriter(temp_path, false);
-
-                foreach (string s in m_script_lines)
+                using (StreamWriter sw = new StreamWriter(temp_path, false))
                 {
-                    sw.WriteLine(s);
+                    foreach (string s in m_script_lines)
+                    {
+                        sw.WriteLine(s);
+                    }
                 }
-
-                sw.Close();
             }
             catch (Exception e)
             {
@@ -540,8 +685,11 @@ namespace logrotate
                     psi.UseShellExecute = false;
                     Logging.Log(Strings.Executing + " " + psi.FileName + " " + psi.Arguments, Logging.LogType.Verbose);
                     Process p = Process.Start(psi);
-                    string output = p.StandardOutput.ReadToEnd();
-                    string error = p.StandardError.ReadToEnd();
+                    var outputTask = p.StandardOutput.ReadToEndAsync();
+                    var errorTask = p.StandardError.ReadToEndAsync();
+                    Task.WaitAll(outputTask, errorTask);
+                    string output = outputTask.Result;
+                    string error = errorTask.Result;
                     p.WaitForExit();
                     if (output != "")
                     {
@@ -642,7 +790,17 @@ namespace logrotate
             {
                 if (!Directory.Exists(lrc.OldDir))
                 {
-                    Directory.CreateDirectory(lrc.OldDir);
+                    if (lrc.CreateOldDir)
+                    {
+                        Directory.CreateDirectory(lrc.OldDir);
+                    }
+                    else
+                    {
+                        // If nocreateolddir is set and directory doesn't exist, log error and use default path
+                        Logging.Log("olddir '" + lrc.OldDir + "' does not exist and createolddir is disabled. Using log file directory instead.", Logging.LogType.Error);
+                        rotate_path = Path.GetDirectoryName(fi.FullName) + "\\";
+                        return rotate_path;
+                    }
                 }
 
                 rotate_path = lrc.OldDir + "\\";
@@ -663,21 +821,62 @@ namespace logrotate
         private static string GetRotateName(logrotateconf lrc, FileInfo fi)
         {
             string rotate_name;
+            string baseName = fi.Name;
+            string fileExt = "";
+
+            // Handle extension directive - preserve original extension
+            if (!string.IsNullOrEmpty(lrc.Extension))
+            {
+                // Remove the specified extension from the base name
+                if (baseName.EndsWith(lrc.Extension))
+                {
+                    fileExt = lrc.Extension;
+                    baseName = baseName.Substring(0, baseName.Length - lrc.Extension.Length);
+                }
+            }
+
             if (lrc.DateExt)
             {
+                // Determine which timestamp to use based on directives
+                DateTime timestamp = DateTime.Now;
+
+                if (lrc.DateYesterday)
+                {
+                    // Use yesterday's date
+                    timestamp = DateTime.Now.AddDays(-1);
+                }
+                else if (lrc.DateHourAgo)
+                {
+                    // Use timestamp from one hour ago
+                    timestamp = DateTime.Now.AddHours(-1);
+                }
+
                 string time_str = lrc.DateFormat;
-                time_str = time_str.Replace("%Y", DateTime.Now.Year.ToString());
-                time_str = time_str.Replace("%m", DateTime.Now.Month.ToString("D2"));
-                time_str = time_str.Replace("%d", DateTime.Now.Day.ToString("D2"));
-                time_str = time_str.Replace("%H", DateTime.Now.Hour.ToString("D2"));
-                time_str = time_str.Replace("%M", DateTime.Now.Minute.ToString("D2"));
-                time_str = time_str.Replace("%s", ((double)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
-                rotate_name = fi.Name + time_str;
+                time_str = time_str.Replace("%Y", timestamp.Year.ToString());
+                time_str = time_str.Replace("%m", timestamp.Month.ToString("D2"));
+                time_str = time_str.Replace("%d", timestamp.Day.ToString("D2"));
+                time_str = time_str.Replace("%H", timestamp.Hour.ToString("D2"));
+                time_str = time_str.Replace("%M", timestamp.Minute.ToString("D2"));
+                time_str = time_str.Replace("%s", ((double)(timestamp.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds).ToString());
+                rotate_name = baseName + time_str;
             }
             else
             {
-                rotate_name = fi.Name + "." + lrc.Start;
+                rotate_name = baseName + "." + lrc.Start;
             }
+
+            // Add back the preserved extension
+            if (!string.IsNullOrEmpty(fileExt))
+            {
+                rotate_name += fileExt;
+            }
+
+            // Handle addextension directive - add extension after rotation suffix
+            if (!string.IsNullOrEmpty(lrc.AddExtension))
+            {
+                rotate_name += lrc.AddExtension;
+            }
+
             return rotate_name;
         }
 
@@ -690,7 +889,22 @@ namespace logrotate
         private static void AgeOutRotatedFiles(logrotateconf lrc, FileInfo fi, string rotate_path)
         {
             DirectoryInfo di = new DirectoryInfo(rotate_path);
-            FileInfo[] fis = di.GetFiles(fi.Name + "*");
+
+            // Determine the pattern for finding rotated files
+            // If extension directive is used, look for base name pattern (e.g., "app.*" for "app.log")
+            // Otherwise, use original pattern (e.g., "app.log*")
+            string searchPattern;
+            if (!string.IsNullOrEmpty(lrc.Extension) && fi.Name.EndsWith(lrc.Extension))
+            {
+                string baseName = fi.Name.Substring(0, fi.Name.Length - lrc.Extension.Length);
+                searchPattern = baseName + "*";
+            }
+            else
+            {
+                searchPattern = fi.Name + "*";
+            }
+
+            FileInfo[] fis = di.GetFiles(searchPattern);
             if (fis.Length == 0)
             {
                 // nothing to do
@@ -705,10 +919,30 @@ namespace logrotate
                 return new CaseInsensitiveComparer().Compare(b.Name, a.Name);
             });
             // if original file is in this list, remove it
-            if (fis[fis.Length - 1].Name == fi.Name)
+            // Note: When using extension directive with broader search pattern (e.g., "app*" instead of "app.log*"),
+            // the original file might not be at the end of the sorted array, so we need to search for it
+            int originalFileIndex = -1;
+            for (int i = 0; i < fis.Length; i++)
             {
-                // this is the original file, remove from this list
-                Array.Resize<FileInfo>(ref fis, fis.Length - 1);
+                if (fis[i].Name == fi.Name)
+                {
+                    originalFileIndex = i;
+                    break;
+                }
+            }
+            if (originalFileIndex >= 0)
+            {
+                // Remove the original file from the array
+                FileInfo[] newfis = new FileInfo[fis.Length - 1];
+                int newIndex = 0;
+                for (int i = 0; i < fis.Length; i++)
+                {
+                    if (i != originalFileIndex)
+                    {
+                        newfis[newIndex++] = fis[i];
+                    }
+                }
+                fis = newfis;
             }
             // go ahead and remove files that are too old by age
             foreach (FileInfo m_fi in fis)
@@ -787,14 +1021,16 @@ namespace logrotate
 
                             if (lrc.Compress)
                             {
-                                FileStream fs = File.Open(rotate_path + newFile, FileMode.Open);
                                 byte[] magicnumber = new byte[2];
-                                fs.Read(magicnumber, 0, 2);
-                                fs.Close();
+                                using (FileStream fs = File.Open(rotate_path + newFile, FileMode.Open))
+                                {
+                                    fs.Read(magicnumber, 0, 2);
+                                }
                                 if ((magicnumber[0] != 0x1f) && (magicnumber[1] != 0x8b))
                                 {
                                     CompressRotatedFile(rotate_path + newFile, lrc);
                                 }
+
                             }
                         }
                     }
@@ -823,9 +1059,103 @@ namespace logrotate
             string rotate_name = GetRotateName(lrc, fi);
 
             bool bLogFileExists = fi.Exists;
+            bool bPostRotateAlreadyRun = false; // Track if postrotate was run for renamecopy
 
-            // now either rename or copy (depends on copy setting) 
-            if ((lrc.Copy) || (lrc.CopyTruncate))
+            // now either rename or copy (depends on copy/renamecopy setting)
+            if (lrc.RenameCopy)
+            {
+                // renamecopy: rename to temp file, run postrotate script, copy to final location, delete temp
+                string tempPath = fi.FullName + ".tmp";
+
+                Logging.Log(Strings.Renaming + " " + fi.FullName + " to temporary file " + tempPath, Logging.LogType.Verbose);
+
+                if (cla.Debug == false)
+                {
+                    try
+                    {
+                        if (bLogFileExists)
+                            File.Move(fi.FullName, tempPath);
+                    }
+                    catch (Exception)
+                    {
+                        Logging.Log("Error renaming file " + fi.FullName + " to " + tempPath, Logging.LogType.Error);
+                        //Logging.LogException(e);
+                        throw;
+                    }
+                }
+
+                // Run postrotate script if specified (before copying to final location)
+                if ((lrc.PostRotate != null) && (lrc.SharedScripts == false))
+                {
+                    PostRotate(lrc, fi.FullName);
+                    bPostRotateAlreadyRun = true;
+                }
+
+                Logging.Log(Strings.Copying + " " + tempPath + Strings.To + rotate_path + rotate_name, Logging.LogType.Verbose);
+
+                if (cla.Debug == false)
+                {
+                    try
+                    {
+                        if (bLogFileExists)
+                            File.Copy(tempPath, rotate_path + rotate_name, false);
+                    }
+                    catch (Exception)
+                    {
+                        Logging.Log("Error copying file " + tempPath + " to " + rotate_path + rotate_name, Logging.LogType.Error);
+                        //Logging.LogException(e);
+                        throw;
+                    }
+
+                    if (bLogFileExists)
+                    {
+                        File.SetCreationTime(rotate_path + rotate_name, DateTime.Now);
+                        File.SetLastAccessTime(rotate_path + rotate_name, DateTime.Now);
+                        File.SetLastWriteTime(rotate_path + rotate_name, DateTime.Now);
+                    }
+                }
+
+                Logging.Log("Removing temporary file " + tempPath, Logging.LogType.Verbose);
+
+                if (cla.Debug == false)
+                {
+                    try
+                    {
+                        if (bLogFileExists)
+                            File.Delete(tempPath);
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Log("Error deleting temporary file " + tempPath, Logging.LogType.Error);
+                        Logging.LogException(e);
+                        // Continue anyway - the main rotation succeeded
+                    }
+                }
+
+                if (lrc.Create)
+                {
+                    Logging.Log(Strings.CreateNewEmptyLogFile, Logging.LogType.Verbose);
+
+                    if (cla.Debug == false)
+                    {
+                        try
+                        {
+                            using (FileStream fs = new FileStream(fi.FullName, FileMode.CreateNew))
+                            {
+                                // just create the file
+                                fs.SetLength(0);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            Logging.Log("Error creating new file " + fi.FullName, Logging.LogType.Error);
+                            //Logging.LogException(e);
+                            throw;
+                        }
+                    }
+                }
+            }
+            else if ((lrc.Copy) || (lrc.CopyTruncate))
             {
                 Logging.Log(Strings.Copying + " " + fi.FullName + Strings.To + rotate_path + rotate_name, Logging.LogType.Verbose);
 
@@ -836,11 +1166,11 @@ namespace logrotate
                         if (bLogFileExists)
                             File.Copy(fi.FullName, rotate_path + rotate_name, false);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Logging.Log("Error copying file " + fi.FullName + " to " + rotate_path + rotate_name, Logging.LogType.Error);
-                        Logging.LogException(e);
-                        return;
+                        //Logging.LogException(e);
+                        throw;
                     }
 
                     if (bLogFileExists)
@@ -862,16 +1192,17 @@ namespace logrotate
                         {
                             if (bLogFileExists)
                             {
-                                FileStream fs = new FileStream(fi.FullName, FileMode.Open);
-                                fs.SetLength(0);
-                                fs.Close();
+                                using (FileStream fs = new FileStream(fi.FullName, FileMode.Open))
+                                {
+                                    fs.SetLength(0);
+                                }
                             }
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             Logging.Log("Error truncating file " + fi.FullName, Logging.LogType.Error);
-                            Logging.LogException(e);
-                            return;
+                            //Logging.LogException(e);
+                            throw;
                         }
                     }
                 }
@@ -888,11 +1219,11 @@ namespace logrotate
                         if (bLogFileExists)
                             File.Move(fi.FullName, rotate_path + rotate_name);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Logging.Log("Error renaming file " + fi.FullName + " to " + rotate_path + rotate_name, Logging.LogType.Error);
-                        Logging.LogException(e);
-                        return;
+                        //Logging.LogException(e);
+                        throw;
                     }
                 }
 
@@ -904,15 +1235,17 @@ namespace logrotate
                     {
                         try
                         {
-                            FileStream fs = new FileStream(fi.FullName, FileMode.CreateNew);
-                            fs.SetLength(0);
-                            fs.Close();
+                            using (FileStream fs = new FileStream(fi.FullName, FileMode.CreateNew))
+                            {
+                                // just create the file
+                                fs.SetLength(0);
+                            }
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             Logging.Log("Error creating new file " + fi.FullName, Logging.LogType.Error);
-                            Logging.LogException(e);
-                            return;
+                            //Logging.LogException(e);
+                            throw;
                         }
                     }
                 }
@@ -939,18 +1272,17 @@ namespace logrotate
                 Status.SetRotationDate(fi.FullName);
             }
 
-            if ((lrc.PostRotate != null) && (lrc.SharedScripts == false))
+            if ((lrc.PostRotate != null) && (lrc.SharedScripts == false) && !bPostRotateAlreadyRun)
                 PostRotate(lrc, fi.FullName);
         }
 
         /// <summary>
-        /// Compress a file using .Net 
+        /// Compress a file using built-in .NET GZipStream or external compression command
         /// </summary>
         /// <param name="m_filepath">the file to compress</param>
         /// <param name="lrc">logrotateconf object</param>
         private static void CompressRotatedFile(string m_filepath, logrotateconf lrc)
         {
-            int chunkSize = 65536;
             FileInfo fi = new FileInfo(m_filepath);
 
             if (fi.Extension == "." + lrc.CompressExt)
@@ -959,34 +1291,110 @@ namespace logrotate
             }
 
             string compressed_file_path = m_filepath + "." + lrc.CompressExt;
-            Logging.Log(Strings.Compressing + " " + m_filepath, Logging.LogType.Verbose);
+            Logging.Log(Strings.Compressing + " " + m_filepath + " to " + compressed_file_path, Logging.LogType.Verbose);
 
             if (cla.Debug == false)
             {
                 try
                 {
-                    using (FileStream fs = new FileStream(m_filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    // Check if custom compression command is specified
+                    if (!string.IsNullOrEmpty(lrc.CompressCmd))
                     {
-                        using (System.IO.Compression.GZipStream zs = new System.IO.Compression.GZipStream(new FileStream(compressed_file_path, FileMode.Create), System.IO.Compression.CompressionMode.Compress))
-                        {
-                            byte[] buffer = new byte[chunkSize];
-                            while (true)
-                            {
-                                int bytesRead = fs.Read(buffer, 0, chunkSize);
-                                if (bytesRead == 0)
-                                    break;
-                                zs.Write(buffer, 0, bytesRead);
-                            }
-                        }
+                        // Use external compression command
+                        CompressWithExternalCommand(m_filepath, compressed_file_path, lrc);
+                    }
+                    else
+                    {
+                        // Use built-in GZipStream (default behavior)
+                        CompressWithGZipStream(m_filepath, compressed_file_path);
                     }
 
                     DeleteRotateFile(m_filepath, lrc);
+
+
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Logging.Log("Error in CompressRotatedFile with file " + m_filepath, Logging.LogType.Error);
-                    Logging.LogException(e);
-                    return;
+                    //Logging.LogException(e);
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compress a file using built-in .NET GZipStream
+        /// </summary>
+        /// <param name="m_filepath">Source file path</param>
+        /// <param name="compressed_file_path">Destination compressed file path</param>
+        private static void CompressWithGZipStream(string m_filepath, string compressed_file_path)
+        {
+            int chunkSize = 65536;
+            using (FileStream fs = new FileStream(m_filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream outputFs = new FileStream(compressed_file_path, FileMode.Create))
+            using (System.IO.Compression.GZipStream zs = new System.IO.Compression.GZipStream(outputFs, System.IO.Compression.CompressionMode.Compress))
+            {
+                byte[] buffer = new byte[chunkSize];
+                while (true)
+                {
+                    int bytesRead = fs.Read(buffer, 0, chunkSize);
+                    if (bytesRead == 0)
+                        break;
+                    zs.Write(buffer, 0, bytesRead);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compress a file using an external compression command
+        /// </summary>
+        /// <param name="m_filepath">Source file path</param>
+        /// <param name="compressed_file_path">Destination compressed file path</param>
+        /// <param name="lrc">logrotateconf object containing compression settings</param>
+        private static void CompressWithExternalCommand(string m_filepath, string compressed_file_path, logrotateconf lrc)
+        {
+            // Build command arguments
+            // Most compressors follow pattern: compresscmd [options] < input > output
+            // Or: compresscmd [options] -c input > output
+            string arguments = "";
+
+            if (!string.IsNullOrEmpty(lrc.CompressOptions))
+            {
+                arguments = lrc.CompressOptions + " ";
+            }
+
+            // Use -c flag to write to stdout, then redirect
+            arguments += "-c \"" + m_filepath + "\"";
+
+            Logging.Log("Running compression command: " + lrc.CompressCmd + " " + arguments, Logging.LogType.Debug);
+
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = lrc.CompressCmd;
+            psi.Arguments = arguments;
+            psi.UseShellExecute = false;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+            psi.CreateNoWindow = true;
+
+            using (Process process = Process.Start(psi))
+            {
+                // Write stdout to the compressed file
+                using (FileStream outputFile = new FileStream(compressed_file_path, FileMode.Create))
+                {
+                    process.StandardOutput.BaseStream.CopyTo(outputFile);
+                }
+
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    Logging.Log("Compression command failed with exit code " + process.ExitCode, Logging.LogType.Error);
+                    if (!string.IsNullOrEmpty(stderr))
+                    {
+                        Logging.Log("Compression error: " + stderr, Logging.LogType.Error);
+                    }
+                    throw new Exception("Compression command failed");
                 }
             }
         }
@@ -1002,31 +1410,29 @@ namespace logrotate
             if ((lrc.SMTPServer != "") && (lrc.SMTPPort != 0) && (lrc.MailLast) && (lrc.MailAddress != ""))
             {
                 Logging.Log(Strings.SendingEmailTo + " " + lrc.MailAddress, Logging.LogType.Verbose);
-                Attachment a = new Attachment(m_file_attachment_path);
                 try
                 {
-                    MailMessage mm = new MailMessage(lrc.MailFrom, lrc.MailAddress);
-                    mm.Subject = "Log file rotated";
-                    mm.Body = Strings.ProgramName + " has rotated the following log file: " + m_filepath + "\r\n\nThe rotated log file is attached.";
-
-                    mm.Attachments.Add(a);
-                    SmtpClient smtp = new SmtpClient(lrc.SMTPServer, lrc.SMTPPort);
-                    if (lrc.SMTPUserName != "")
+                    using (MailMessage mm = new MailMessage(lrc.MailFrom, lrc.MailAddress))
+                    using (Attachment a = new Attachment(m_file_attachment_path))
                     {
-                        smtp.Credentials = new System.Net.NetworkCredential(lrc.SMTPUserName, lrc.SMTPUserPassword);
-                    }
-                    smtp.EnableSsl = lrc.SMTPUseSSL;
+                        mm.Subject = "Log file rotated";
+                        mm.Body = Strings.ProgramName + " has rotated the following log file: " + m_filepath + "\r\n\nThe rotated log file is attached.";
 
-                    smtp.Send(mm);
+                        mm.Attachments.Add(a);
+                        SmtpClient smtp = new SmtpClient(lrc.SMTPServer, lrc.SMTPPort);
+                        if (lrc.SMTPUserName != "")
+                        {
+                            smtp.Credentials = new System.Net.NetworkCredential(lrc.SMTPUserName, lrc.SMTPUserPassword);
+                        }
+                        smtp.EnableSsl = lrc.SMTPUseSSL;
+
+                        smtp.Send(mm);
+                    }
                 }
                 catch (Exception e)
                 {
                     Logging.LogException(e);
                     return;
-                }
-                finally
-                {
-                    a.Dispose();
                 }
             }
         }
@@ -1072,66 +1478,66 @@ namespace logrotate
 
             //StreamReader sr = new StreamReader(m_path_to_file);
 
-            MemoryStream ms = GetModifiedFile(m_path_to_file);
-
-            StreamReader sr = new StreamReader(ms, Encoding.UTF8, true);
-
-            bool bSawASection = false;
-            // read in lines until done
-            while (true)
+            using (MemoryStream ms = GetModifiedFile(m_path_to_file))
+            using (StreamReader sr = new StreamReader(ms, Encoding.UTF8, true))
             {
-                string line = sr.ReadLine();
-                if (line == null)
+                bool bSawASection = false;
+                // read in lines until done
+                while (true)
                 {
-                    break;
-                }
+                    string line = sr.ReadLine();
+                    if (line == null)
+                    {
+                        break;
+                    }
 
-                line = line.Trim();
-                Logging.Log(Strings.ReadLine + " " + line, Logging.LogType.Debug);
+                    line = line.Trim();
+                    Logging.Log(Strings.ReadLine + " " + line, Logging.LogType.Debug);
 
-                // skip blank lines
-                if (string.IsNullOrEmpty(line))
-                {
-                    continue;
-                }
+                    // skip blank lines
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        continue;
+                    }
 
-                // if line begins with #, then it is a comment and can be ignored
-                if (line[0] == '#')
-                {
-                    Logging.Log(Strings.Skipping + " " + Strings.Comment, Logging.LogType.Debug);
-                    continue;
-                }
+                    // if line begins with #, then it is a comment and can be ignored
+                    if (line[0] == '#')
+                    {
+                        Logging.Log(Strings.Skipping + " " + Strings.Comment, Logging.LogType.Debug);
+                        continue;
+                    }
 
-                // every line until we've met { must be a file to rotate
-                //if (!bSawASection)
-                //{
-                //    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
+                    // every line until we've met { must be a file to rotate
+                    //if (!bSawASection)
+                    //{
+                    //    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
 
-                //    // create a new config object taking defaults from Global Config
-                //    logrotateconf lrc = new logrotateconf(GlobalConfig);
+                    //    // create a new config object taking defaults from Global Config
+                    //    logrotateconf lrc = new logrotateconf(GlobalConfig);
 
-                //    ProcessConfileFileSection(line, sr, lrc);
-                //}
+                    //    ProcessConfileFileSection(line, sr, lrc);
+                    //}
 
-                // see if there is a { in the line.  If so, this is the beginning of a section 
-                // otherwise it may be a global setting
-                if (line.Contains("{"))
-                {
-                    bSawASection = true;
-                    Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
+                    // see if there is a { in the line.  If so, this is the beginning of a section
+                    // otherwise it may be a global setting
+                    if (line.Contains("{"))
+                    {
+                        bSawASection = true;
+                        Logging.Log(Strings.Processing + " " + Strings.NewSection, Logging.LogType.Verbose);
 
-                    // create a new config object taking defaults from Global Config
-                    logrotateconf lrc = new logrotateconf(GlobalConfig);
+                        // create a new config object taking defaults from Global Config
+                        logrotateconf lrc = new logrotateconf(GlobalConfig);
 
-                    ProcessConfileFileSection(line, sr, lrc);
-                }
-                else
-                {
-                    if (bSawASection == false)
-                        GlobalConfig.Parse(line, cla.Debug);
+                        ProcessConfileFileSection(line, sr, lrc);
+                    }
                     else
                     {
-                        Logging.Log(Strings.GlobalOptionsAboveSections, Logging.LogType.Error);
+                        if (bSawASection == false)
+                            GlobalConfig.Parse(line, cla.Debug);
+                        else
+                        {
+                            Logging.Log(Strings.GlobalOptionsAboveSections, Logging.LogType.Error);
+                        }
                     }
                 }
             }
@@ -1180,7 +1586,25 @@ namespace logrotate
                             }
 
                             lrc.Increment_ProcessCount();
-                            FilePathConfigSection.Add(split, lrc);
+
+                            // Check if key already exists - if ignoreduplicates is set, skip duplicate patterns
+                            if (FilePathConfigSection.ContainsKey(split))
+                            {
+                                if (lrc.IgnoreDuplicates)
+                                {
+                                    Logging.Log("Ignoring duplicate config section for pattern: " + split, Logging.LogType.Verbose);
+                                }
+                                else
+                                {
+                                    // If ignoreduplicates is not set, we still can't add duplicate keys to Dictionary
+                                    // Log a warning but don't throw an exception
+                                    Logging.Log("Warning: Duplicate config section for pattern '" + split + "' - using first occurrence", Logging.LogType.Warning);
+                                }
+                            }
+                            else
+                            {
+                                FilePathConfigSection.Add(split, lrc);
+                            }
                             split = "";
                         }
                         else
@@ -1237,22 +1661,86 @@ namespace logrotate
         {
             //we expect files-to-rotate to be put in one line, ending on { and separated by spaces
             //this function takes care of the case when files are separated by newline
-            //to fix that we read original config file into memory, then replace newlines with space 
+            //to fix that we read original config file into memory, then replace newlines with space
             //all further processing will deal with this modified memory stream instead of original file
             string data = File.ReadAllText(_path);
 
             //get position of {
             Int32 pos = data.IndexOf("{");
+
+            // If there's no { in the file, it only contains global directives
+            // Return the file as-is without modification
+            if (pos == -1)
+            {
+                byte[] globalOnlyBytes = Encoding.ASCII.GetBytes(data);
+                MemoryStream globalOnlyStream = new MemoryStream(globalOnlyBytes);
+                return globalOnlyStream;
+            }
+
             string data1 = data.Substring(0, pos).Trim();
 
-            //replace all EOLs before pos with spaces
-            string replaceWith = " ";
-            data1 = data1.Replace("\r\n", replaceWith).Replace("\n", replaceWith).Replace("\r", replaceWith);
+            //split into lines and separate global directives from file paths
+            //global directives should remain on separate lines
+            //only file paths (lines that look like file paths) should be collapsed
+            string[] lines = data1.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            StringBuilder globalDirectives = new StringBuilder();
+            StringBuilder filePaths = new StringBuilder();
+            bool inScriptBlock = false;
 
-            //collapse multiple spaces into one
-            data1 = String.Join(" ", data1.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+            foreach (string line in lines)
+            {
+                string trimmedLine = line.Trim();
 
-            string newdata = data1 + " " + data.Substring(pos);
+                // skip blank lines and comments
+                if (string.IsNullOrEmpty(trimmedLine) || trimmedLine[0] == '#')
+                    continue;
+
+                // check for script block markers
+                if (trimmedLine == "firstaction" || trimmedLine == "lastaction" ||
+                    trimmedLine == "prerotate" || trimmedLine == "postrotate")
+                {
+                    inScriptBlock = true;
+                    globalDirectives.AppendLine(trimmedLine);
+                    continue;
+                }
+                if (trimmedLine == "endscript")
+                {
+                    inScriptBlock = false;
+                    globalDirectives.AppendLine(trimmedLine);
+                    continue;
+                }
+
+                // if we're in a script block, keep everything as global directives
+                if (inScriptBlock)
+                {
+                    globalDirectives.AppendLine(trimmedLine);
+                    continue;
+                }
+
+                // simple heuristic: if line contains path separators or quotes, it's likely a file path
+                // otherwise it's a directive
+                if (trimmedLine.Contains("\\") || trimmedLine.Contains("/") || trimmedLine.Contains("\""))
+                {
+                    filePaths.Append(trimmedLine);
+                    filePaths.Append(" ");
+                }
+                else
+                {
+                    globalDirectives.AppendLine(trimmedLine);
+                }
+            }
+
+            // reconstruct: global directives (each on own line) + file paths (on one line) + rest of file
+            string filePathLine = filePaths.ToString().Trim();
+            string globalPart = globalDirectives.ToString();
+
+            // collapse multiple spaces in file path line
+            if (!string.IsNullOrEmpty(filePathLine))
+            {
+                filePathLine = String.Join(" ", filePathLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            string newdata = globalPart + filePathLine + " " + data.Substring(pos);
 
             byte[] bytes = Encoding.ASCII.GetBytes(newdata);
             MemoryStream s = new MemoryStream(bytes);
@@ -1349,7 +1837,7 @@ namespace logrotate
                         default:
                             // no match, so print an error
                             Logging.Log(Strings.UnknownCmdLineArg + ": " + a, Logging.LogType.Error);
-                            Environment.Exit(1);
+                            Environment.Exit(Program.EXIT_INVALID_ARGUMENTS);
                             break;
                     }
                 }

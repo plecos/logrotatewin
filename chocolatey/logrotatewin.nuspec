@@ -19,6 +19,9 @@
 
 This is a Windows implementation of the logrotate utility found in Linux platforms. The goal is to use the same command line parameters and files as the Linux version.
 
+You can help support my efforts by buying me a coffee!
+https://buymeacoffee.com/kenasalter
+
 ## Features
 
 - Rotate log files based on size, time, or both

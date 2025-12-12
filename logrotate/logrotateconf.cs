@@ -28,17 +28,22 @@ namespace logrotate
         #endregion
 
         #region Private variables
-        private bool bgzipcompress = true;
-        //private string scompresscmd = "gzip";
-        //private string suncompressedcmd = "gunzip";
-        private string scompressext;
-        //private string scompressoptions = "-9";
+        private bool bgzipcompress = false;
+        private string scompresscmd = ""; // Empty = use built-in GZipStream
+        private string suncompresscmd = ""; // Empty = use built-in GZipStream
+        private string scompressext = sgzipdefaultcompressext;
+        private string scompressoptions = ""; // Default options for external compression
         private bool bcopy = false;
         private bool bcopytruncate = false;
+        private bool brenamecopy = false;
         private bool bcreate = false;
+        private int iminutes = 0;
+        private bool bhourly = false;
         private bool bdaily = false;
         private bool bdateext = false;
         private string sdateformat = "-%Y%m%d";
+        private bool bdateyesterday = false;
+        private bool bdatehourago = false;
         private bool bdelaycompress = false;
         private bool bifempty = true;
         private string smail = "";
@@ -52,23 +57,32 @@ namespace logrotate
         private long iminsize = 0;
         private long imaxsize = 0;
         private int imaxage = 0;
+        private int iminage = 0;
         private bool bmissingok = false;
+        private bool bignoreduplicates = false;
         private bool bmonthly = false;
+        private int imonthday = 0; // 0 = not specified, 1-31 = specific day
         private bool bmaillast = true;
         private string solddir = "";
+        private bool bcreateolddir = true; // default is to create olddir if it doesn't exist
         private List<string> spostrotate = null;
         private List<string> sprerotate = null;
         private List<string> sfirstaction = null;
         private List<string> slastaction = null;
+        private List<string> spreremove = null;
         private int irotate = 0;
         private long lsize = 0;
         private bool bsharedscripts = false;
         private int istart = 1;
         private string[] stabooext = { ".swp" };
+        private string[] staboopat = null;
         private bool bweekly = false;
+        private int iweekday = -1; // -1 = not specified, 0-6 = Sunday-Saturday
         private bool byearly = false;
         private bool bshred = false;
         private int ishredcycles = 3;
+        private string sextension = "";
+        private string saddextension = "";
         private bool bretry_logfileopen = false;
         private int inumretry_logfileopen = 0;
         private int inumms_retry_logfileopen = 1000;
@@ -78,6 +92,7 @@ namespace logrotate
         private bool bprerotate = false;
         private bool bfirstaction = false;
         private bool blastaction = false;
+        private bool bpreremove = false;
 
         private int process_count = 0;
 
@@ -98,6 +113,18 @@ namespace logrotate
         public string CompressExt
         {
             get { return scompressext; }
+        }
+        public string CompressCmd
+        {
+            get { return scompresscmd; }
+        }
+        public string UncompressCmd
+        {
+            get { return suncompresscmd; }
+        }
+        public string CompressOptions
+        {
+            get { return scompressoptions; }
         }
         public bool DelayCompress
         {
@@ -129,6 +156,16 @@ namespace logrotate
             get { return bdateext; }
         }
 
+        public bool DateYesterday
+        {
+            get { return bdateyesterday; }
+        }
+
+        public bool DateHourAgo
+        {
+            get { return bdatehourago; }
+        }
+
         public List<string> PreRotate
         {
             get { return sprerotate; }
@@ -145,6 +182,10 @@ namespace logrotate
         public List<string> LastAction
         {
             get { return slastaction; }
+        }
+        public List<string> PreRemove
+        {
+            get { return spreremove; }
         }
 
         public string DateFormat
@@ -170,9 +211,19 @@ namespace logrotate
             get { return solddir; }
         }
 
+        public bool CreateOldDir
+        {
+            get { return bcreateolddir; }
+        }
+
         public bool CopyTruncate
         {
             get { return bcopytruncate; }
+        }
+
+        public bool RenameCopy
+        {
+            get { return brenamecopy; }
         }
 
         public bool Create
@@ -190,13 +241,33 @@ namespace logrotate
             get { return imaxsize; }
         }
 
+        public int Minutes
+        {
+            get { return iminutes; }
+        }
+        public bool Hourly
+        {
+            get { return bhourly; }
+        }
         public bool Daily
         {
             get { return bdaily; }
         }
+        public bool Weekly
+        {
+            get { return bweekly; }
+        }
+        public int Weekday
+        {
+            get { return iweekday; }
+        }
         public bool Monthly
         {
             get { return bmonthly; }
+        }
+        public int MonthDay
+        {
+            get { return imonthday; }
         }
         public bool Yearly
         {
@@ -209,6 +280,14 @@ namespace logrotate
         public int ShredCycles
         {
             get { return ishredcycles; }
+        }
+        public string Extension
+        {
+            get { return sextension; }
+        }
+        public string AddExtension
+        {
+            get { return saddextension; }
         }
         public bool MailLast
         {
@@ -247,13 +326,17 @@ namespace logrotate
         {
             get { return imaxage; }
         }
+        public int MinAge
+        {
+            get { return iminage; }
+        }
+        public bool IgnoreDuplicates
+        {
+            get { return bignoreduplicates; }
+        }
         public bool SharedScripts
         {
             get { return bsharedscripts; }
-        }
-        public bool Weekly
-        {
-            get { return bweekly; }
         }
         public int Rotate
         {
@@ -266,6 +349,10 @@ namespace logrotate
         public string[] TabooList
         {
             get { return stabooext; }
+        }
+        public string[] TabooPatList
+        {
+            get { return staboopat; }
         }
         public bool LogFileOpen_Retry
         {
@@ -295,38 +382,52 @@ namespace logrotate
         public logrotateconf(logrotateconf m_source)
         {
             bgzipcompress = m_source.bgzipcompress;
-            //scompresscmd = m_source.scompresscmd;
-            //suncompressedcmd = m_source.suncompressedcmd;
+            scompresscmd = m_source.scompresscmd;
+            suncompresscmd = m_source.suncompresscmd;
+            scompressoptions = m_source.scompressoptions;
             scompressext = m_source.scompressext;
-            //scompressoptions = m_source.scompressoptions;
             bcopy = m_source.bcopy;
             bcopytruncate = m_source.bcopytruncate;
+            brenamecopy = m_source.brenamecopy;
             bcreate = m_source.bcreate;
+            iminutes = m_source.iminutes;
+            bhourly = m_source.bhourly;
             bdaily = m_source.bdaily;
             bdateext = m_source.bdateext;
             sdateformat = m_source.sdateformat;
+            bdateyesterday = m_source.bdateyesterday;
+            bdatehourago = m_source.bdatehourago;
             bdelaycompress = m_source.bdelaycompress;
             bifempty = m_source.bifempty;
             smail = m_source.smail;
             iminsize = m_source.iminsize;
             imaxsize = m_source.imaxsize;
             imaxage = m_source.imaxage;
+            iminage = m_source.iminage;
             bmissingok = m_source.bmissingok;
+            bignoreduplicates = m_source.bignoreduplicates;
             bmonthly = m_source.bmonthly;
+            imonthday = m_source.imonthday;
             solddir = m_source.solddir;
+            bcreateolddir = m_source.bcreateolddir;
             spostrotate = m_source.spostrotate;
             sprerotate = m_source.sprerotate;
             sfirstaction = m_source.sfirstaction;
             slastaction = m_source.slastaction;
+            spreremove = m_source.spreremove;
             irotate = m_source.irotate;
             lsize = m_source.lsize;
             bsharedscripts = m_source.bsharedscripts;
             istart = m_source.istart;
             stabooext = m_source.stabooext;
+            staboopat = m_source.staboopat;
             bweekly = m_source.bweekly;
+            iweekday = m_source.iweekday;
             byearly = m_source.byearly;
             bshred = m_source.bshred;
             ishredcycles = m_source.ishredcycles;
+            sextension = m_source.sextension;
+            saddextension = m_source.saddextension;
             bmaillast = m_source.bmaillast;
             ssmtpserver = m_source.ssmtpserver;
             ismtpport = m_source.ismtpport;
@@ -354,11 +455,11 @@ namespace logrotate
 
             // if we are currently inside of a postrotate,prerotate,lastaction, or firstaction block
             // look for the endscript directive, otherwise add the line to the array for the appropriate block type
-            if ((bpostrotate == true) || (bprerotate == true) || (blastaction == true) || (bfirstaction == true))
+            if ((bpostrotate == true) || (bprerotate == true) || (blastaction == true) || (bfirstaction == true) || (bpreremove == true))
             {
                 if (split[0] == "endscript")
                 {
-                    bpostrotate = bprerotate = blastaction = bfirstaction = false;
+                    bpostrotate = bprerotate = blastaction = bfirstaction = bpreremove = false;
                 }
                 else
                 {
@@ -370,6 +471,8 @@ namespace logrotate
                         ParseLastAction(line);
                     if (bfirstaction)
                         ParseFirstAction(line);
+                    if (bpreremove)
+                        ParsePreRemove(line);
                 }
                 return true;
             }
@@ -404,6 +507,16 @@ namespace logrotate
                     bcopytruncate = false;
                     PrintDebug(split[0], bcopytruncate.ToString(), bDebug);
                     break;
+                case "renamecopy":
+                    brenamecopy = true;
+                    // renamecopy implies nocopytruncate
+                    bcopytruncate = false;
+                    PrintDebug(split[0], brenamecopy.ToString(), bDebug);
+                    break;
+                case "norenamecopy":
+                    brenamecopy = false;
+                    PrintDebug(split[0], brenamecopy.ToString(), bDebug);
+                    break;
                 case "create":
                     bcreate = true;
                     PrintDebug(split[0], bcreate.ToString(), bDebug);
@@ -411,6 +524,14 @@ namespace logrotate
                 case "nocreate":
                     bcreate = false;
                     PrintDebug(split[0], bcreate.ToString(), bDebug);
+                    break;
+                case "minutes":
+                    iminutes = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "hourly":
+                    bhourly = true;
+                    PrintDebug(split[0], bhourly.ToString(), bDebug);
                     break;
                 case "daily":
                     bdaily = true;
@@ -420,17 +541,42 @@ namespace logrotate
                     bdelaycompress = true;
                     PrintDebug(split[0], bdelaycompress.ToString(), bDebug);
                     break;
+                case "nodelaycompress":
+                    bdelaycompress = false;
+                    PrintDebug(split[0], bdelaycompress.ToString(), bDebug);
+                    break;
                 case "ifempty":
                     bifempty = true;
+                    PrintDebug(split[0], bifempty.ToString(), bDebug);
+                    break;
+                case "notifempty":
+                    bifempty = false;
                     PrintDebug(split[0], bifempty.ToString(), bDebug);
                     break;
                 case "missingok":
                     bmissingok = true;
                     PrintDebug(split[0], bmissingok.ToString(), bDebug);
                     break;
+                case "nomissingok":
+                    bmissingok = false;
+                    PrintDebug(split[0], bmissingok.ToString(), bDebug);
+                    break;
+                case "ignoreduplicates":
+                    bignoreduplicates = true;
+                    PrintDebug(split[0], bignoreduplicates.ToString(), bDebug);
+                    break;
                 case "monthly":
                     bmonthly = true;
-                    PrintDebug(split[0], bmonthly.ToString(), bDebug);
+                    // Optional parameter: specific day of month (1-31)
+                    if (split.Length > 1)
+                    {
+                        imonthday = Convert.ToInt32(split[1]);
+                        PrintDebug(split[0], split[1], bDebug);
+                    }
+                    else
+                    {
+                        PrintDebug(split[0], bmonthly.ToString(), bDebug);
+                    }
                     break;
                 case "sharedscripts":
                     bsharedscripts = true;
@@ -443,37 +589,44 @@ namespace logrotate
                     break;
                 case "weekly":
                     bweekly = true;
-                    PrintDebug(split[0], bweekly.ToString(), bDebug);
+                    // Optional parameter: specific day of week (0-6, Sunday=0)
+                    if (split.Length > 1)
+                    {
+                        iweekday = Convert.ToInt32(split[1]);
+                        PrintDebug(split[0], split[1], bDebug);
+                    }
+                    else
+                    {
+                        PrintDebug(split[0], bweekly.ToString(), bDebug);
+                    }
                     break;
                 case "yearly":
                     byearly = true;
                     PrintDebug(split[0], byearly.ToString(), bDebug);
                     break;
                 case "compresscmd":
-                    //scompresscmd = split[1];
-                    //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
-                    break;
-                case "uncompresscmd":
-                    //suncompressedcmd = split[1];
-                    //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
-                    break;
-                case "compressext":
-                    scompressext = split[1];
+                    scompresscmd = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
-                case "scompressoptions":
-                    //scompressoptions = split[1];
-                    //PrintDebug(split[0], split[1], bDebug);
-                    PrintDebug(split[0], Strings.UnknownDirective, bDebug);
+                case "uncompresscmd":
+                    suncompresscmd = StripQuotes(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "compressext":
+                    scompressext = StripQuotes(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "compressoptions":
+                    // Join all remaining parts in case options contain spaces
+                    scompressoptions = string.Join(" ", split, 1, split.Length - 1);
+                    PrintDebug(split[0], scompressoptions, bDebug);
                     break;
                 case "dateformat":
-                    sdateformat = split[1];
+                    sdateformat = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "mail":
-                    smail = split[1];
+                    smail = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "nomail":
@@ -484,13 +637,26 @@ namespace logrotate
                     imaxage = Convert.ToInt32(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
+                case "minage":
+                    iminage = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
                 case "olddir":
-                    solddir = split[1];
+                    solddir = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "noolddir":
                     solddir = "";
                     PrintDebug(split[0], "", bDebug);
+                    break;
+                case "createolddir":
+                    bcreateolddir = true;
+                    // Note: Linux accepts optional mode/owner/group parameters, but we ignore them on Windows
+                    PrintDebug(split[0], bcreateolddir.ToString(), bDebug);
+                    break;
+                case "nocreateolddir":
+                    bcreateolddir = false;
+                    PrintDebug(split[0], bcreateolddir.ToString(), bDebug);
                     break;
                 case "rotate":
                     irotate = Convert.ToInt32(split[1]);
@@ -516,7 +682,29 @@ namespace logrotate
                         }
                     }
 
-                    PrintDebug(split[0], lsize.ToString(), bDebug);
+                    PrintDebug(split[0], iminsize.ToString(), bDebug);
+                    break;
+                case "maxsize":
+                    // the size can be for following:  100, 100k, 100m, 100g
+                    string maxsize_type = split[1].Substring(split[1].Length - 1, 1).ToUpper();
+                    if (Char.IsNumber(maxsize_type, 0))
+                        imaxsize = Convert.ToInt64(split[1]);
+                    else
+                    {
+                        if (maxsize_type == "K")
+                            imaxsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1024;
+                        else if (maxsize_type == "M")
+                            imaxsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1048576;
+                        else if (maxsize_type == "G")
+                            imaxsize = Convert.ToInt64(split[1].Substring(0, split[1].Length - 1)) * 1073741824;
+                        else
+                        {
+                            Logging.Log(Strings.UnknownSizeType+" " + line, Logging.LogType.Error);
+                            return false;
+                        }
+                    }
+
+                    PrintDebug(split[0], imaxsize.ToString(), bDebug);
                     break;
                 case "shred":
                     bshred = true;
@@ -528,6 +716,14 @@ namespace logrotate
                     break;
                 case "shredcycles":
                     ishredcycles = Convert.ToInt32(split[1]);
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "extension":
+                    sextension = split[1];
+                    PrintDebug(split[0], split[1], bDebug);
+                    break;
+                case "addextension":
+                    saddextension = split[1];
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "start":
@@ -549,6 +745,10 @@ namespace logrotate
                 case "lastaction":
                     blastaction = true;
                     PrintDebug(split[0], blastaction.ToString(), bDebug);
+                    break;
+                case "preremove":
+                    bpreremove = true;
+                    PrintDebug(split[0], bpreremove.ToString(), bDebug);
                     break;
                 
                 case "size":
@@ -581,7 +781,7 @@ namespace logrotate
                     PrintDebug(split[0], bmaillast.ToString(), bDebug);
                     break;
                 case "smtpserver":
-                    ssmtpserver = split[1];
+                    ssmtpserver = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "smtpport":
@@ -597,20 +797,40 @@ namespace logrotate
                     PrintDebug(split[0], bsmtpssl.ToString(), bDebug);
                     break;
                 case "smtpuser":
-                    ssmtpuser = split[1];
+                    ssmtpuser = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "smtpfrom":
-                    ssmtpfrom = split[1];
+                    ssmtpfrom = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "smtpuserpwd":
-                    ssmtpuserpwd = split[1];
+                    ssmtpuserpwd = StripQuotes(split[1]);
                     PrintDebug(split[0], "****", bDebug);
                     break;
                 case "dateext":
                     bdateext = true;
                     PrintDebug(split[0], bdateext.ToString(), bDebug);
+                    break;
+                case "nodateext":
+                    bdateext = false;
+                    PrintDebug(split[0], bdateext.ToString(), bDebug);
+                    break;
+                case "dateyesterday":
+                    bdateyesterday = true;
+                    PrintDebug(split[0], bdateyesterday.ToString(), bDebug);
+                    break;
+                case "nodateyesterday":
+                    bdateyesterday = false;
+                    PrintDebug(split[0], bdateyesterday.ToString(), bDebug);
+                    break;
+                case "datehourago":
+                    bdatehourago = true;
+                    PrintDebug(split[0], bdatehourago.ToString(), bDebug);
+                    break;
+                case "nodatehourago":
+                    bdatehourago = false;
+                    PrintDebug(split[0], bdatehourago.ToString(), bDebug);
                     break;
                 case "tabooext":
                     int taboo_start_idx = 2;
@@ -625,8 +845,25 @@ namespace logrotate
                         stabooext[stabooext.Length - 1] = split[j];
                     }
                     break;
+                case "taboopat":
+                    int taboopat_start_idx = 2;
+                    if (split[1] != "+")
+                    {
+                        taboopat_start_idx = 1;
+                        staboopat = new string[0];
+                    }
+                    else if (staboopat == null)
+                    {
+                        staboopat = new string[0];
+                    }
+                    for (int j = taboopat_start_idx; j < split.Length; j++)
+                    {
+                        Array.Resize<string>(ref staboopat, staboopat.Length + 1);
+                        staboopat[staboopat.Length - 1] = split[j];
+                    }
+                    break;
                 case "include":
-                    sinclude = split[1];
+                    sinclude = StripQuotes(split[1]);
                     PrintDebug(split[0], split[1], bDebug);
                     break;
                 case "logfileopen_retry":
@@ -642,7 +879,7 @@ namespace logrotate
                     PrintDebug(split[0], inumretry_logfileopen.ToString(), bDebug);
                     break;
                 default:
-                    Logging.Log(Strings.UnknownDirective + " " + line, Logging.LogType.Error);
+                    Logging.Log(Strings.UnknownDirective + " " + line, Logging.LogType.Warning);
                     return false;
             }
             return true;
@@ -676,18 +913,18 @@ namespace logrotate
 
         private void ParseFirstAction(string line)
         {
-            if (slastaction == null)
-                slastaction = new List<string>();
-
-            slastaction.Add(line);
-        }
-
-        private void ParseLastAction(string line)
-        {
             if (sfirstaction == null)
                 sfirstaction = new List<string>();
 
             sfirstaction.Add(line);
+        }
+
+        private void ParseLastAction(string line)
+        {
+            if (slastaction == null)
+                slastaction = new List<string>();
+
+            slastaction.Add(line);
         }
 
         private void ParsePreRotate(string line)
@@ -706,6 +943,14 @@ namespace logrotate
             spostrotate.Add(line);
         }
 
+        private void ParsePreRemove(string line)
+        {
+            if (spreremove == null)
+                spreremove = new List<string>();
+
+            spreremove.Add(line);
+        }
+
         public void Clear_PreRotate()
         {
             sprerotate.Clear();
@@ -716,6 +961,32 @@ namespace logrotate
         {
             spostrotate.Clear();
             spostrotate = null;
+        }
+
+        /// <summary>
+        /// Strips surrounding quotes from a directive value to match Linux logrotate shell quoting rules.
+        /// Supports both single quotes (') and double quotes (").
+        /// </summary>
+        /// <param name="value">The directive value that may contain quotes</param>
+        /// <returns>The value with surrounding quotes removed</returns>
+        private string StripQuotes(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            // Check if value is surrounded by double quotes
+            if (value.Length >= 2 && value[0] == '"' && value[value.Length - 1] == '"')
+            {
+                return value.Substring(1, value.Length - 2);
+            }
+
+            // Check if value is surrounded by single quotes
+            if (value.Length >= 2 && value[0] == '\'' && value[value.Length - 1] == '\'')
+            {
+                return value.Substring(1, value.Length - 2);
+            }
+
+            return value;
         }
 
         public void Increment_ProcessCount()

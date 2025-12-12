@@ -13,9 +13,9 @@
     <Company></Company>
     <Product>Logrotate</Product>
     <Copyright>Copyright © 2013-2025 Ken Salter</Copyright>
-    <Version>0.0.0.19</Version>
-    <FileVersion>0.0.0.19</FileVersion>
-    <AssemblyVersion>0.0.0.19</AssemblyVersion>
+    <Version>0.0.0.20</Version>
+    <FileVersion>0.0.0.20</FileVersion>
+    <AssemblyVersion>0.0.0.20</AssemblyVersion>
 
     <!-- COM Settings -->
     <ComVisible>false</ComVisible>

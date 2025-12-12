@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "logrotate", "logrotate\logrotate.csproj", "{042774C6-AED5-442B-BB42-A3E7A5C7F08E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "logrotate.Tests", "logrotate.Tests\logrotate.Tests.csproj", "{78D04AF3-6C27-492B-851C-BA588E6E0B96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{042774C6-AED5-442B-BB42-A3E7A5C7F08E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{042774C6-AED5-442B-BB42-A3E7A5C7F08E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{042774C6-AED5-442B-BB42-A3E7A5C7F08E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78D04AF3-6C27-492B-851C-BA588E6E0B96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78D04AF3-6C27-492B-851C-BA588E6E0B96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78D04AF3-6C27-492B-851C-BA588E6E0B96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78D04AF3-6C27-492B-851C-BA588E6E0B96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

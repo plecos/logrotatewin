@@ -2,6 +2,9 @@
 
 Written by Ken Salter (C) 2012-2025
 
+You can help support my efforts by buying me a coffee!
+https://buymeacoffee.com/kenasalter
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -19,7 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 This is a port of the logrotate utility available for Linux. See the Wiki for more notes.
 
+**Feature Coverage**: Implements **91%** (63/69) of Linux logrotate directives, providing comprehensive log rotation functionality for Windows environments.
+
 Project homepage: <https://sourceforge.net/projects/logrotatewin/>
+GitHub repository: <https://github.com/ken-salter/logrotatewin>
 
 ## Requirements
 
@@ -27,9 +33,23 @@ Project homepage: <https://sourceforge.net/projects/logrotatewin/>
 
 ## Installation
 
-Run the setup.exe to install.
+### Chocolatey (Recommended)
 
-This installation will copy the executable, README.md, gnu_license.txt, and a sample .conf file to the folder you specify.
+The easiest way to install LogRotate for Windows is using Chocolatey:
+
+```powershell
+choco install logrotatewin
+```
+
+After installation, the `logrotate` command will be available in your PATH.
+
+### Manual Installation
+
+Download the latest release from the [GitHub Releases page](https://github.com/ken-salter/logrotatewin/releases) and extract to your desired location. The package includes:
+- `logrotate.exe` - Main executable
+- `README.md` - This documentation
+- `gnu_license.txt` - License information
+- Sample configuration files
 
 ## Building from Source
 
@@ -48,13 +68,118 @@ Build Release configuration:
 dotnet build -c Release
 ```
 
+## Usage
+
+```
+logrotate [options] <configfile>
+```
+
+### Command Line Options
+
+- `-d, --debug` - Debug mode (verbose output, no actual rotation)
+- `-f, --force` - Force rotation even if not needed
+- `-v, --verbose` - Verbose output
+- `-s, --state <file>` - Use alternate state file
+- `-?, --usage, --help` - Show usage information
+
+### Configuration File Directives
+
+LogRotate for Windows supports 63 configuration directives (91% of Linux logrotate directives) plus 7 Windows-specific directives. Configuration files use the same syntax as Linux logrotate.
+
+**Example configuration:**
+```
+C:\logs\myapp\*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create
+    postrotate
+        echo "Logs rotated" >> C:\logs\rotation.log
+    endscript
+}
+```
+
+**Key directive categories:**
+- **Rotation scheduling**: `hourly`, `daily`, `weekly`, `monthly`, `yearly`, `size`, `minsize`, `maxsize`
+- **Compression**: `compress`, `nocompress`, `delaycompress`, `compresscmd`, `compressoptions`
+- **File handling**: `create`, `copy`, `copytruncate`, `renamecopy`, `olddir`, `missingok`
+- **File naming**: `dateext`, `dateformat`, `dateyesterday`, `datehourago`, `extension`, `addextension`
+- **Cleanup**: `rotate`, `maxage`, `minage`, `shred`, `shredcycles`
+- **Scripts**: `prerotate`, `postrotate`, `firstaction`, `lastaction`, `preremove`, `sharedscripts`
+- **Mail**: `mail`, `mailfirst`, `maillast` (requires Windows-specific SMTP configuration)
+- **Configuration**: `include`, `tabooext`, `taboopat`
+- **Windows-specific**: `smtpserver`, `smtpport`, `smtpssl`, `smtpuser`, `smtpuserpwd`, `smtpfrom`
+
+For complete documentation, visit the GitHub repository: <https://github.com/ken-salter/logrotatewin>
+
+### Exit Codes
+
+LogRotate for Windows uses standard exit codes to indicate success or failure. These codes can be used in scripts and scheduled tasks to determine the result of the operation.
+
+| Exit Code | Name | Description |
+|-----------|------|-------------|
+| 0 | SUCCESS | Successful execution |
+| 1 | GENERAL_ERROR | General runtime error or exception |
+| 2 | INVALID_ARGUMENTS | Invalid command line arguments |
+| 3 | CONFIG_ERROR | Configuration file not found or invalid |
+| 4 | NO_FILES_TO_ROTATE | No log files found to process |
+
+#### Example Usage in Scripts
+
+**PowerShell:**
+```powershell
+logrotate C:\logs\logrotate.conf
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Rotation completed successfully"
+} elseif ($LASTEXITCODE -eq 4) {
+    Write-Host "No files to rotate"
+} else {
+    Write-Host "Error occurred: exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+```
+
+**Batch File:**
+```batch
+logrotate C:\logs\logrotate.conf
+if %ERRORLEVEL% EQU 0 (
+    echo Rotation completed successfully
+) else if %ERRORLEVEL% EQU 4 (
+    echo No files to rotate
+) else (
+    echo Error occurred: exit code %ERRORLEVEL%
+    exit /b %ERRORLEVEL%
+)
+```
+
 ## Release Notes
+
+### 0.0.0.20 - 12 Dec 2025
+- **Major Feature Update**: Expanded directive coverage from 74% to 91% (63/69 Linux directives)
+- **New Directives**: `dateyesterday`, `nodateyesterday`, `datehourago`, `nodatehourago`, `nodateext`
+- **New Directives**: `createolddir`, `nocreateolddir` - Control automatic olddir creation
+- **New Directives**: `renamecopy`, `norenamecopy` - Cross-device rotation support
+- **New Directives**: `nodelaycompress`, `nomissingok`, `minage`, `taboopat`, `ignoreduplicates`
+- **Bug Fix**: Extension directive file search pattern corrected for proper age-out
+- **Bug Fix**: Original file removal from search results improved for broader patterns
+- **Bug Fix**: Postrotate script execution timing fixed for renamecopy
+- **Testing**: Added 30+ comprehensive integration test files with 150+ test cases
+- **Documentation**: Added DIRECTIVE_COMPARISON.md, TESTING.md, EXIT-CODES.md
+- Standardized exit codes for better script integration
+- Fixed potential deadlock issues in script execution
+- Improved resource disposal with using statements
+- Added comprehensive exit code documentation
 
 ### 0.0.0.19 - 10 Dec 2025
 - Upgraded project to SDK-style format
 - Updated to .NET Framework 4.8
 - Changed platform target from x86 to AnyCPU
 - Modernized build system
+- Added Chocolatey package support
+- Updated GitHub Actions workflows for automated releases
 
 ### 0.0.0.18 - 31 Aug 2018 (beta)
 - Getting source code up to date
