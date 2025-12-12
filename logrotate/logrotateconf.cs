@@ -63,6 +63,7 @@ namespace logrotate
         private int imonthday = 0; // 0 = not specified, 1-31 = specific day
         private bool bmaillast = true;
         private string solddir = "";
+        private bool bcreateolddir = true; // default is to create olddir if it doesn't exist
         private List<string> spostrotate = null;
         private List<string> sprerotate = null;
         private List<string> sfirstaction = null;
@@ -207,6 +208,11 @@ namespace logrotate
         public string OldDir
         {
             get { return solddir; }
+        }
+
+        public bool CreateOldDir
+        {
+            get { return bcreateolddir; }
         }
 
         public bool CopyTruncate
@@ -396,6 +402,7 @@ namespace logrotate
             bmonthly = m_source.bmonthly;
             imonthday = m_source.imonthday;
             solddir = m_source.solddir;
+            bcreateolddir = m_source.bcreateolddir;
             spostrotate = m_source.spostrotate;
             sprerotate = m_source.sprerotate;
             sfirstaction = m_source.sfirstaction;
@@ -624,6 +631,15 @@ namespace logrotate
                 case "noolddir":
                     solddir = "";
                     PrintDebug(split[0], "", bDebug);
+                    break;
+                case "createolddir":
+                    bcreateolddir = true;
+                    // Note: Linux accepts optional mode/owner/group parameters, but we ignore them on Windows
+                    PrintDebug(split[0], bcreateolddir.ToString(), bDebug);
+                    break;
+                case "nocreateolddir":
+                    bcreateolddir = false;
+                    PrintDebug(split[0], bcreateolddir.ToString(), bDebug);
                     break;
                 case "rotate":
                     irotate = Convert.ToInt32(split[1]);

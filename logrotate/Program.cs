@@ -779,7 +779,17 @@ namespace logrotate
             {
                 if (!Directory.Exists(lrc.OldDir))
                 {
-                    Directory.CreateDirectory(lrc.OldDir);
+                    if (lrc.CreateOldDir)
+                    {
+                        Directory.CreateDirectory(lrc.OldDir);
+                    }
+                    else
+                    {
+                        // If nocreateolddir is set and directory doesn't exist, log error and use default path
+                        Logging.Log("olddir '" + lrc.OldDir + "' does not exist and createolddir is disabled. Using log file directory instead.", Logging.LogType.Error);
+                        rotate_path = Path.GetDirectoryName(fi.FullName) + "\\";
+                        return rotate_path;
+                    }
                 }
 
                 rotate_path = lrc.OldDir + "\\";
