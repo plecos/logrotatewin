@@ -491,6 +491,10 @@ namespace logrotate
                     bdelaycompress = true;
                     PrintDebug(split[0], bdelaycompress.ToString(), bDebug);
                     break;
+                case "nodelaycompress":
+                    bdelaycompress = false;
+                    PrintDebug(split[0], bdelaycompress.ToString(), bDebug);
+                    break;
                 case "ifempty":
                     bifempty = true;
                     PrintDebug(split[0], bifempty.ToString(), bDebug);
