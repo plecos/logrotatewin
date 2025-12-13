@@ -4,6 +4,9 @@
 
 This document describes the testing strategy and implementation for LogRotate for Windows.
 
+You can help support my efforts by buying me a coffee!
+https://buymeacoffee.com/kenasalter
+
 ## Test Project Setup
 
 - **Framework**: xUnit 2.6.2

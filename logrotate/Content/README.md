@@ -157,6 +157,11 @@ if %ERRORLEVEL% EQU 0 (
 
 ## Release Notes
 
+### 0.0.22 - 12 Dev 2025
+
+- New version scheme, using Nerbank.GitVersioning to automatically assign versions
+- Updated documentation
+
 ### 0.0.0.20 - 12 Dec 2025
 - **Major Feature Update**: Expanded directive coverage from 74% to 91% (63/69 Linux directives)
 - **New Directives**: `dateyesterday`, `nodateyesterday`, `datehourago`, `nodatehourago`, `nodateext`

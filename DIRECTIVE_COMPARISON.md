@@ -2,6 +2,9 @@
 
 This document compares the directives implemented in logrotatewin against the official Linux logrotate directives.
 
+You can help support my efforts by buying me a coffee!
+https://buymeacoffee.com/kenasalter
+
 ## Summary Statistics
 
 - **Linux logrotate total directives**: 69 configuration file directives
@@ -126,14 +129,6 @@ These directives are unique to logrotatewin and don't exist in Linux logrotate:
 
 ### User/Group Management
 - ❌ `su <user> <group>` - Run rotation as specific user (not applicable on Windows)
-
-## Implementation Recommendations
-
-### Medium Priority (Less Common)
-1. **`allowhardlink`** - Unix-specific edge case
-
-### Not Applicable for Windows
-1. **`su <user> <group>`** - Unix permission model not applicable
 
 ## Notes
 
