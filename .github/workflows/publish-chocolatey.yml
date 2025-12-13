@@ -68,6 +68,38 @@ jobs:
         $nuspec.package.metadata.version = $version
         $nuspec.Save("chocolatey\logrotatewin.nuspec")
 
+        # Update VERIFICATION.txt with current version and commit info
+        $commitHash = git rev-parse HEAD
+        $verificationLines = @(
+          "VERIFICATION",
+          "Verification is intended to assist the Chocolatey moderators and community",
+          "in verifying that this package's contents are trustworthy.",
+          "",
+          "Package can be verified like this:",
+          "",
+          "1. Download the source code from GitHub:",
+          "   https://github.com/ken-salter/logrotatewin",
+          "",
+          "2. Build the project using .NET SDK:",
+          "   dotnet build -c Release",
+          "",
+          "3. Compare the generated binary (logrotate\bin\Release\net48\logrotate.exe)",
+          "   with the one in this package (tools\logrotate.exe)",
+          "",
+          "The package was created from source code at:",
+          "   https://github.com/ken-salter/logrotatewin",
+          "   Commit: $commitHash",
+          "   Tag: v$version",
+          "",
+          "The binary can be verified using these checksums:",
+          "   File: logrotate.exe",
+          "   SHA256: $checksum",
+          "",
+          "This package is maintained by the original author of the software."
+        )
+        $verificationLines | Out-File -FilePath "chocolatey\VERIFICATION.txt" -Encoding utf8
+        Write-Host "Updated VERIFICATION.txt with version $version and commit $commitHash"
+
         # Create chocolateyinstall.ps1 for GitHub releases
         @"
         `$ErrorActionPreference = 'Stop'

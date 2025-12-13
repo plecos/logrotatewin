@@ -69,6 +69,66 @@ jobs:
         & $exe 2>&1 | Select-Object -First 5
       shell: pwsh
 
+    - name: Update README.md with release version
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $date = Get-Date -Format "dd MMM yyyy"
+        $readmePath = "logrotate\Content\README.md"
+
+        # Read the README
+        $content = Get-Content $readmePath -Raw
+
+        # Check if release notes for this version already exist
+        $versionPattern = "### $version -"
+        if ($content -match [regex]::Escape($versionPattern)) {
+          Write-Host "Release notes for version $version already exist - skipping auto-generation"
+          Write-Host "Using existing custom release notes"
+        } elseif ($content -match '(?s)(## Release Notes\r?\n)') {
+          # Version doesn't exist - auto-generate release notes
+          Write-Host "No release notes found for version $version - auto-generating"
+
+          # Create new entry lines
+          $newEntryLines = @(
+            "## Release Notes",
+            "",
+            "### $version - $date",
+            "",
+            "- Automated release with Nerdbank.GitVersioning",
+            "- See [commit history](https://github.com/${{ github.repository }}/commits/master) for detailed changes",
+            ""
+          )
+          $newEntry = $newEntryLines -join "`n"
+
+          # Replace the "## Release Notes" header with the new header + entry
+          $content = $content -replace '## Release Notes\r?\n', $newEntry
+
+          # Write back to file
+          $content | Out-File -FilePath $readmePath -Encoding utf8 -NoNewline
+
+          Write-Host "Updated README.md with auto-generated release notes for version $version"
+        } else {
+          Write-Warning "Could not find Release Notes section in README.md"
+        }
+      shell: pwsh
+
+    - name: Commit updated README.md
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Check if README was actually changed
+        if (git diff --quiet logrotate\Content\README.md) {
+          Write-Host "No changes to README.md, skipping commit"
+        } else {
+          git add logrotate\Content\README.md
+          git commit -m "docs: Update README.md release notes for version ${{ steps.version.outputs.VERSION }} [skip ci]"
+          git push
+          Write-Host "Committed and pushed README.md update"
+        }
+      shell: pwsh
+
     - name: Create release package
       if: steps.check_tag.outputs.EXISTS == 'false'
       run: |
