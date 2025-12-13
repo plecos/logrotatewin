@@ -79,20 +79,7 @@ These are automatically granted for workflows in the same repository.
 
 To enable automatic publishing to Chocolatey:
 
-1. **Get your Chocolatey API Key:**
-   - Go to https://community.chocolatey.org/account
-   - Sign in or create an account
-   - Navigate to "API Keys" section
-   - Copy your API key
-
-2. **Add the API key to GitHub:**
-   - Go to your repository → Settings → Secrets and variables → Actions
-   - Click "New repository secret"
-   - Name: `CHOCOLATEY_API_KEY`
-   - Value: Your API key from step 1
-   - Click "Add secret"
-
-3. **Enable automatic publishing (optional):**
+1. **Enable automatic publishing (optional):**
    - Edit `.github/workflows/publish-chocolatey.yml`
    - Uncomment these lines:
      ```yaml
@@ -125,7 +112,7 @@ To enable automatic publishing to Chocolatey:
 
 ### Automated Release Flow (Future)
 
-Once `CHOCOLATEY_API_KEY` is configured and automatic triggers are enabled:
+Once automatic triggers are enabled:
 
 1. Merge PR to master
 2. `build.yml` runs (validation)
