@@ -28,7 +28,7 @@ This is a port of the logrotate utility available for Linux. See the Wiki for mo
 
 **Feature Coverage**: Implements **91%** (63/69) of Linux logrotate directives. See [DIRECTIVE_COMPARISON.md](DIRECTIVE_COMPARISON.md) for complete directive coverage details.
 
-https://sourceforge.net/projects/logrotatewin/
+https://sourceforge.net/projects/logrotate/
 
 ## Requirements
 
@@ -41,7 +41,7 @@ https://sourceforge.net/projects/logrotatewin/
 The easiest way to install LogRotate for Windows is using Chocolatey:
 
 ```powershell
-choco install logrotatewin
+choco install logrotate
 ```
 
 After installation, the `logrotate` command will be available in your PATH.
