@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$packageName = 'logrotatewin'
+$packageName = 'logrotate'
 $toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 # Remove the executable (Chocolatey will handle shim removal automatically)

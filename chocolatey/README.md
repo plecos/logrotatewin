@@ -24,7 +24,7 @@ This directory contains the files needed to create a Chocolatey package for LogR
 
 4. Install locally for testing:
    ```powershell
-   choco install logrotatewin -s . -f
+   choco install logrotate -s . -f
    ```
 
 ### Option 2: GitHub Release Build (for distribution)
@@ -39,25 +39,25 @@ This directory contains the files needed to create a Chocolatey package for LogR
 
 4. Submit to Chocolatey Community Repository:
    ```powershell
-   choco push logrotatewin.0.0.0.19.nupkg --source https://push.chocolatey.org/
+   choco push logrotate.0.0.0.19.nupkg --source https://push.chocolatey.org/
    ```
 
 ## Testing the Package Locally
 
 ```powershell
 # Install
-choco install logrotatewin -s chocolatey -f
+choco install logrotate -s chocolatey -f
 
 # Test
 logrotate --help
 
 # Uninstall
-choco uninstall logrotatewin
+choco uninstall logrotate
 ```
 
 ## Package Structure
 
-- `logrotatewin.nuspec` - Package metadata and dependencies
+- `logrotate.nuspec` - Package metadata and dependencies
 - `tools/chocolateyinstall.ps1` - Installation script (for GitHub releases)
 - `tools/chocolateyinstall-local.ps1` - Installation script (for local builds)
 - `tools/chocolateyuninstall.ps1` - Uninstallation script

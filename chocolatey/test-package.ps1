@@ -18,15 +18,15 @@ if (-not $isAdmin) {
 
 # Uninstall if already installed
 Write-Host "Checking for existing installation..." -ForegroundColor Green
-$existing = choco list --local-only logrotatewin
-if ($existing -match "logrotatewin") {
+$existing = choco list --local-only logrotate
+if ($existing -match "logrotate") {
     Write-Host "Uninstalling existing version..." -ForegroundColor Yellow
-    choco uninstall logrotatewin -y
+    choco uninstall logrotate -y
 }
 
 # Install from local package
-Write-Host "`nInstalling logrotatewin from local package..." -ForegroundColor Green
-choco install logrotatewin -s . -f -y
+Write-Host "`nInstalling logrotate from local package..." -ForegroundColor Green
+choco install logrotate -s . -f -y
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`nERROR: Installation failed!" -ForegroundColor Red
@@ -52,4 +52,4 @@ if ($logrotate) {
     exit 1
 }
 
-Write-Host "`nTo uninstall: choco uninstall logrotatewin -y" -ForegroundColor Yellow
+Write-Host "`nTo uninstall: choco uninstall logrotate -y" -ForegroundColor Yellow

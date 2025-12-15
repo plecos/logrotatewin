@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$packageName = 'logrotatewin'
+$packageName = 'logrotate'
 $toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 # For local installation, files should be included in the package
