@@ -5,9 +5,7 @@ LogRotate for Windows
 Written by Ken Salter (C) 2012-2025
 
 [![SourceForge Downloads](https://img.shields.io/sourceforge/dt/logrotatewin?label=Sourceforge)
-](https://sourceforge.net/projects/logrotatewin/files/latest/download)
-
-[![Chocolatey Downloads](https://img.shields.io/chocolatey/dt/logrotate?label=Chocolatey)](https://community.chocolatey.org/packages/LogRotate/)
+](https://sourceforge.net/projects/logrotatewin/files/latest/download) [![Chocolatey Downloads](https://img.shields.io/chocolatey/dt/logrotate?label=Chocolatey)](https://community.chocolatey.org/packages/LogRotate/)
 
 
 You can help support my efforts by buying me a coffee!
