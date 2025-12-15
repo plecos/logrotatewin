@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
-    <id>logrotatewin</id>
+    <id>logrotate</id>
     <version>0.0.0.19</version>
-    <packageSourceUrl>https://github.com/ken-salter/logrotatewin</packageSourceUrl>
+    <packageSourceUrl>https://github.com/ken-salter/logrotate</packageSourceUrl>
     <owners>Ken Salter</owners>
     <title>LogRotate for Windows</title>
     <authors>Ken Salter</authors>

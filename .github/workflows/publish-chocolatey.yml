@@ -64,9 +64,9 @@ jobs:
         $checksum = "${{ steps.download.outputs.SHA256 }}"
 
         # Update nuspec version
-        [xml]$nuspec = Get-Content "chocolatey\logrotatewin.nuspec"
+        [xml]$nuspec = Get-Content "chocolatey\logrotate.nuspec"
         $nuspec.package.metadata.version = $version
-        $nuspec.Save("chocolatey\logrotatewin.nuspec")
+        $nuspec.Save("chocolatey\logrotate.nuspec")
 
         # Update VERIFICATION.txt with current version and commit info
         $commitHash = git rev-parse HEAD
@@ -104,7 +104,7 @@ jobs:
         @"
         `$ErrorActionPreference = 'Stop'
 
-        `$packageName = 'logrotatewin'
+        `$packageName = 'logrotate'
         `$toolsDir    = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
         `$url         = '$url'
 
@@ -147,7 +147,7 @@ jobs:
     - name: Test Chocolatey package
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
-        $package = "chocolatey\logrotatewin.$version.nupkg"
+        $package = "chocolatey\logrotate.$version.nupkg"
 
         if (Test-Path $package) {
           Write-Host "Package created successfully: $package"
@@ -163,7 +163,7 @@ jobs:
       if: github.event_name == 'release' || github.event.inputs.version != ''
       run: |
         $version = "${{ steps.version.outputs.VERSION }}"
-        $package = "chocolatey\logrotatewin.$version.nupkg"
+        $package = "chocolatey\logrotate.$version.nupkg"
 
         # Check if API key is configured
         if ([string]::IsNullOrEmpty("${{ secrets.CHOCOLATEY_API_KEY }}")) {
@@ -185,7 +185,7 @@ jobs:
         if ($LASTEXITCODE -eq 0) {
           Write-Host "Successfully published to Chocolatey!"
           Write-Host "Package will be available after moderation at:"
-          Write-Host "  https://community.chocolatey.org/packages/logrotatewin/$version"
+          Write-Host "  https://community.chocolatey.org/packages/logrotate/$version"
         } else {
           Write-Error "Failed to publish to Chocolatey"
           exit 1

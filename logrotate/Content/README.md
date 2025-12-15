@@ -38,7 +38,7 @@ GitHub repository: <https://github.com/ken-salter/logrotatewin>
 The easiest way to install LogRotate for Windows is using Chocolatey:
 
 ```powershell
-choco install logrotatewin
+choco install logrotate
 ```
 
 After installation, the `logrotate` command will be available in your PATH.
