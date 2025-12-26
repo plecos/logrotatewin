@@ -55,6 +55,6 @@ For more information, see the documentation at the project homepage.
     </dependencies>
   </metadata>
   <files>
-    <file src="tools\**" target="tools" />
+    <file src="tools\**" target="tools" exclude="tools\chocolateyinstall-local.ps1" />
   </files>
 </package>
