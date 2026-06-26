@@ -157,6 +157,11 @@ if %ERRORLEVEL% EQU 0 (
 
 ## Release Notes
 
+### 0.0.44 - 26 Jun 2026
+
+- Automated release with Nerdbank.GitVersioning
+- See [commit history](https://github.com/plecos/logrotatewin/commits/master) for detailed changes
+
 ### 0.0.28 - 14 Dec 2025
 
 - Automated release with Nerdbank.GitVersioning
