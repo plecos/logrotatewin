@@ -1013,7 +1013,7 @@ namespace logrotate
                                 DeleteRotateFile(rotate_path + newFile, lrc);
                             }
 
-                            File.Move(m_fi.FullName, rotate_path + newFile);
+                            RetryFileOperation(() => File.Move(m_fi.FullName, rotate_path + newFile));
 
                             // if we are set to compress, then check if the new file is compressed.  this is done by looking at the first two bytes
                             // if they are set to 0x1f8b then it is already compressed.  There is a possibility of a false positive, but this should
@@ -1034,6 +1034,41 @@ namespace logrotate
                             }
                         }
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Executes a file-system operation, retrying a few times if it fails with a transient
+        /// IOException. On Windows a log file (or its rotated copy) can be momentarily locked by
+        /// another process - antivirus/Defender scanning a freshly created file, an indexer, or a
+        /// postrotate script still releasing a handle - which makes File.Move/File.Copy/File.Delete
+        /// throw even though the operation would succeed a moment later. Without this a single
+        /// transient lock aborts the whole rotation run (see the intermittent CI failure where one
+        /// of two files in a shared-scripts section failed to rotate).
+        /// </summary>
+        /// <param name="fileOperation">the file-system action to perform</param>
+        private static void RetryFileOperation(Action fileOperation)
+        {
+            const int maxAttempts = 5;
+            const int delayMs = 100;
+
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    fileOperation();
+                    return;
+                }
+                catch (IOException) when (attempt < maxAttempts)
+                {
+                    Logging.Log("Transient file error - retrying (attempt " + attempt + " of " + maxAttempts + ")", Logging.LogType.Verbose);
+                    System.Threading.Thread.Sleep(delayMs * attempt);
+                }
+                catch (UnauthorizedAccessException) when (attempt < maxAttempts)
+                {
+                    Logging.Log("Transient file access error - retrying (attempt " + attempt + " of " + maxAttempts + ")", Logging.LogType.Verbose);
+                    System.Threading.Thread.Sleep(delayMs * attempt);
                 }
             }
         }
@@ -1074,7 +1109,7 @@ namespace logrotate
                     try
                     {
                         if (bLogFileExists)
-                            File.Move(fi.FullName, tempPath);
+                            RetryFileOperation(() => File.Move(fi.FullName, tempPath));
                     }
                     catch (Exception)
                     {
@@ -1098,7 +1133,7 @@ namespace logrotate
                     try
                     {
                         if (bLogFileExists)
-                            File.Copy(tempPath, rotate_path + rotate_name, false);
+                            RetryFileOperation(() => File.Copy(tempPath, rotate_path + rotate_name, false));
                     }
                     catch (Exception)
                     {
@@ -1122,7 +1157,7 @@ namespace logrotate
                     try
                     {
                         if (bLogFileExists)
-                            File.Delete(tempPath);
+                            RetryFileOperation(() => File.Delete(tempPath));
                     }
                     catch (Exception e)
                     {
@@ -1164,7 +1199,7 @@ namespace logrotate
                     try
                     {
                         if (bLogFileExists)
-                            File.Copy(fi.FullName, rotate_path + rotate_name, false);
+                            RetryFileOperation(() => File.Copy(fi.FullName, rotate_path + rotate_name, false));
                     }
                     catch (Exception)
                     {
@@ -1217,7 +1252,7 @@ namespace logrotate
                     try
                     {
                         if (bLogFileExists)
-                            File.Move(fi.FullName, rotate_path + rotate_name);
+                            RetryFileOperation(() => File.Move(fi.FullName, rotate_path + rotate_name));
                     }
                     catch (Exception)
                     {
