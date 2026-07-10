@@ -492,5 +492,89 @@ daily
                 TestHelpers.CleanupPath(configFile);
             }
         }
+
+        [Fact]
+        public void ParseConfig_WithQuotedWildcardPath_ShouldRotateMatchingFiles()
+        {
+            // Regression test for issue #60: a quoted path that also contains a wildcard
+            // (e.g. "C:\path\*.log") with the opening brace on the same line was reported
+            // as an "Unknown directive" followed by "No folders found in section(s)",
+            // meaning the section header was never recognized.
+            // https://github.com/plecos/logrotatewin/issues/60
+
+            // Arrange
+            string logDir = Path.Combine(TestDir, "log");
+            Directory.CreateDirectory(logDir);
+            string log1 = Path.Combine(logDir, "prod.log");
+            string log2 = Path.Combine(logDir, "app.log");
+            File.WriteAllText(log1, "Prod log\n");
+            File.WriteAllText(log2, "App log\n");
+
+            string wildcardPattern = Path.Combine(logDir, "*.log");
+            string stateFile = Path.Combine(TestDir, "state.txt");
+            string configContent = $@"
+""{wildcardPattern}"" {{
+    rotate 2
+}}
+";
+            string configFile = TestHelpers.CreateTempConfigFile(configContent);
+
+            try
+            {
+                // Act
+                RunLogRotate("-s", stateFile, "-f", configFile);
+
+                // Assert
+                File.Exists($"{log1}.1").Should().BeTrue("prod.log matched by quoted wildcard should be rotated");
+                File.Exists($"{log2}.1").Should().BeTrue("app.log matched by quoted wildcard should be rotated");
+            }
+            finally
+            {
+                TestHelpers.CleanupPath(configFile);
+            }
+        }
+
+        [Fact]
+        public void ParseConfig_WithQuotedWildcardPathFromIssue60_ShouldRotate()
+        {
+            // Regression test for issue #60 using the reporter's full directive set:
+            // quoted wildcard path + same-line brace + copytruncate + sharedscripts + olddir.
+
+            // Arrange
+            string logDir = Path.Combine(TestDir, "log");
+            string archiveDir = Path.Combine(TestDir, "archive");
+            Directory.CreateDirectory(logDir);
+            string log1 = Path.Combine(logDir, "prod.log");
+            File.WriteAllText(log1, "Prod log\n");
+
+            string wildcardPattern = Path.Combine(logDir, "*.log");
+            string stateFile = Path.Combine(TestDir, "state.txt");
+            string configContent = $@"
+""{wildcardPattern}"" {{
+    daily
+    rotate 30
+    missingok
+    notifempty
+    copytruncate
+    sharedscripts
+    olddir ""{archiveDir}""
+}}
+";
+            string configFile = TestHelpers.CreateTempConfigFile(configContent);
+
+            try
+            {
+                // Act
+                RunLogRotate("-s", stateFile, "-f", configFile);
+
+                // Assert - the rotated file lands in olddir
+                File.Exists(Path.Combine(archiveDir, "prod.log.1")).Should().BeTrue(
+                    "prod.log matched by quoted wildcard should be rotated into olddir");
+            }
+            finally
+            {
+                TestHelpers.CleanupPath(configFile);
+            }
+        }
     }
 }
