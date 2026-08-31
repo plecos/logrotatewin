@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using FluentAssertions;
 using Xunit;
@@ -219,6 +219,55 @@ endscript
 
                 // Assert
                 File.Exists($"{logFile}.1").Should().BeTrue("log should be rotated");
+                File.Exists(preMarkerFile).Should().BeTrue("prerotate script should have created marker file");
+                File.Exists(postMarkerFile).Should().BeTrue("postrotate script should have created marker file");
+            }
+            finally
+            {
+                TestHelpers.CleanupPath(configFile);
+            }
+        }
+
+        [Fact]
+        public void RotateLog_WithBothPreAndPostRotateAndSharedScripts_ShouldExecuteBoth()
+        {
+            // this log should be rotated
+            string logFileA = Path.Combine(TestDir, "testA.log");
+            File.WriteAllText(logFileA, "Test log content A\n");
+            // this log should NOT be rotated
+            string logFileB = Path.Combine(TestDir, "testB.log");
+            File.WriteAllText(logFileB, "Test log content B\n");
+
+            string preMarkerFile = Path.Combine(TestDir, "pre_marker.txt");
+            string postMarkerFile = Path.Combine(TestDir, "post_marker.txt");
+            
+            string stateFile = Path.Combine(TestDir, "state.txt");
+            File.WriteAllText(stateFile, $"# logrotate state file created {DateTime.Now.ToString("dd.MM.yyyy hh:mm:ss")}\r\nlogrotate state -- version 2\r\n\"{logFileB}\" {DateTime.Now.ToString("yyyy-M-d")}");
+
+            string configContent = $@"
+""{logFileA}"" ""{logFileB}"" {{
+    rotate 2
+    monthly
+    sharedscripts
+    prerotate
+        echo Pre executed > ""{preMarkerFile}""
+    endscript
+    postrotate
+        echo Post executed > ""{postMarkerFile}""
+    endscript
+}}
+";
+            string configFile = TestHelpers.CreateTempConfigFile(configContent);
+
+            try
+            {
+                // Act
+                RunLogRotate("-s", stateFile, configFile);
+
+                // Assert
+                File.Exists($"{logFileA}.1").Should().BeTrue("log should be rotated");
+                File.Exists($"{logFileB}.1").Should().BeFalse("log should not be rotated");
+
                 File.Exists(preMarkerFile).Should().BeTrue("prerotate script should have created marker file");
                 File.Exists(postMarkerFile).Should().BeTrue("postrotate script should have created marker file");
             }

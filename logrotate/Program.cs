@@ -107,15 +107,6 @@ namespace logrotate
                 }
                 foreach (KeyValuePair<string, logrotateconf> kvp in FilePathConfigSection)
                 {
-                    // if sharedscripts enabled, then run prerotate
-                    if ((kvp.Value.PreRotate != null) && (kvp.Value.SharedScripts == true))
-                    {
-                        Logging.Log(Strings.ExecutingPreRotateSharedScripts, Logging.LogType.Verbose);
-                        PreRotate(kvp.Value, kvp.Key);
-                        // clear the prerotate so it won't be called again for any other files in this section since sharedscripts is set to true
-                        kvp.Value.Clear_PreRotate();
-                    }
-
                     // decrement the number of times we have seen this config section.  when it reaches zero, we know we don't have anymore files to process
                     // and we can then run the PostRotate
                     kvp.Value.Decrement_ProcessCount();
@@ -259,6 +250,15 @@ namespace logrotate
                                     }
                                 }
                             }
+                        }
+
+                        // if sharedscripts enabled, then run prerotate
+                        if ((kvp.Value.PreRotate != null) && (kvp.Value.SharedScripts == true) && (m_rotatefis.Count > 0))
+                        {
+                            Logging.Log(Strings.ExecutingPreRotateSharedScripts, Logging.LogType.Verbose);
+                            PreRotate(kvp.Value, kvp.Key);
+                            // clear the prerotate so it won't be called again for any other files in this section since sharedscripts is set to true
+                            kvp.Value.Clear_PreRotate();
                         }
 
                         // now rotate
