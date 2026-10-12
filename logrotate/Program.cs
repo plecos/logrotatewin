@@ -1227,7 +1227,7 @@ namespace logrotate
                         {
                             if (bLogFileExists)
                             {
-                                using (FileStream fs = new FileStream(fi.FullName, FileMode.Open))
+                                using (FileStream fs = new FileStream(fi.FullName, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
                                 {
                                     fs.SetLength(0);
                                 }
